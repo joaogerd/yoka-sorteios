@@ -7,10 +7,10 @@ function add(parent,tag,content,className=''){const el=document.createElement(ta
 function showEntries(entries){$('entries').replaceChildren();const fragment=document.createDocumentFragment();for(const e of entries){const row=add(fragment,'div','','entry');add(row,'b',e.number);add(row,'span',e.name||'Número vendido');}$('entries').append(fragment);$('review-count').textContent=`${entries.length.toLocaleString('pt-BR')} números vendidos`;$('review').hidden=false;}
 function render(){
  document.body.classList.toggle('locked',!!event);document.body.classList.toggle('busy',busy);const count=event?.entries.length||0,results=event?.results||[];
- $('total').textContent=count.toLocaleString('pt-BR');$('drawn').textContent=results.length;$('remaining').textContent=(count-results.length).toLocaleString('pt-BR');$('event-title').textContent=event?.title||'Yoka Sorteios';
+ $('total').textContent=count.toLocaleString('pt-BR');$('drawn').textContent=results.length;$('remaining').textContent=(count-results.length).toLocaleString('pt-BR');$('event-title').textContent=event?.title||'Yoka Sorteios';$('print-title').textContent=event?.title||'';
  $('status').textContent=busy?'SORTEIO EM ANDAMENTO':event?(count===results.length?'RIFA CONCLUÍDA':'LISTA CONFIRMADA'):'AGUARDANDO A LISTA';
  $('draw').disabled=!event||busy||blocked||results.length>=count||!$('prize').value.trim();$('prize').disabled=busy||blocked;
- for(const id of ['export','print'])$(id).disabled=!event||busy||blocked;
+ for(const id of ['export','print','instagram'])$(id).disabled=!event||busy||blocked;
  $('reset').disabled=busy||blocked;$('backup').disabled=busy||blocked;$('csv').disabled=!!event||blocked;$('check').disabled=blocked;$('confirm').disabled=busy||blocked;
  if(event)showEntries(event.entries);else if(review)showEntries(review);else $('review').hidden=true;
  const last=results.at(-1);if(!busy){$('winner').textContent=last?.number||'—';$('winner').classList.toggle('long-number',(last?.number.length||0)>6);$('winner-label').textContent=last?'NÚMERO VENCEDOR':'SEU PRÓXIMO NÚMERO DA SORTE';$('winner-name').textContent=last?`${last.name||'Número vendido'} · ${last.prize}`:'O sorteio começa com uma lista confirmada.';}
@@ -55,7 +55,49 @@ $('draw').onclick=()=>guarded(async()=>{
  void $('winner').offsetWidth;$('winner').classList.add('reveal');notice('Resultado registrado. Baixe o comprovante para guardar esta rodada.',true);
 });
 $('export').onclick=()=>{try{download();notice('Comprovante preparado para download. Confira a pasta de downloads.',true);}catch(e){notice(e.message);}};
-$('print').onclick=()=>window.print();
+$('print').onclick=()=>{if(event?.results.length)window.print();else notice('Faça pelo menos um sorteio antes de imprimir.');};
+$('instagram').onclick=async()=>{
+ if(busy||!event?.results.length){notice('Faça pelo menos um sorteio antes de gerar a imagem.');return;}
+ const snapshot=validateEvent(event);$('instagram').disabled=true;
+ try{
+  const logo=new Image();logo.src='yoka-logo.png';await logo.decode();
+  const pages=Math.ceil(snapshot.results.length/4);
+  function lines(ctx,value,width){
+   const output=[];let line='';
+   for(const char of value){if(ctx.measureText(line+char).width>width&&line){output.push(line.trim());line='';}line+=char;}
+   if(line)output.push(line.trim());return output;
+  }
+  function fit(ctx,value,width,maxLines,start){
+   let size=start,list;
+   do{ctx.font='600 '+size+'px system-ui, sans-serif';list=lines(ctx,value,width);if(list.length<=maxLines)break;size--;}while(size>10);
+   return {list,size};
+  }
+  for(let page=0;page<pages;page++){
+   const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1350;
+   const c=canvas.getContext('2d');if(!c)throw Error('Este navegador não permite gerar a imagem.');
+   c.fillStyle='#0b1c33';c.fillRect(0,0,1080,1350);
+   c.fillStyle='#bf241b';c.fillRect(0,0,1080,16);
+   c.drawImage(logo,65,48,154,154);
+   c.fillStyle='#fff';c.font='800 46px system-ui, sans-serif';c.fillText('YOKA SORTEIOS',254,113);
+   c.fillStyle='#b0c2d7';c.font='500 22px system-ui, sans-serif';c.fillText('GUARATINGUETÁ · FUTSAL',256,154);
+   c.fillStyle='#fff';c.font='800 44px system-ui, sans-serif';c.fillText('RESULTADOS DA RIFA',65,257);
+   const title=fit(c,snapshot.title,950,2,28);c.fillStyle='#b0c2d7';
+   title.list.forEach((line,i)=>c.fillText(line,65,298+i*title.size*1.2));
+   snapshot.results.slice(page*4,page*4+4).forEach((r,index)=>{
+    const y=355+index*215;c.fillStyle='#173653';c.fillRect(65,y,950,195);c.fillStyle='#bf241b';c.fillRect(65,y,6,195);
+    c.fillStyle='#b0c2d7';c.font='600 18px system-ui, sans-serif';c.fillText(String(page*4+index+1)+'º SORTEADO',92,y+35);
+    c.fillStyle='#fff';c.font='800 '+(r.number.length>6?30:48)+'px system-ui, sans-serif';c.fillText(r.number,92,y+103);
+    const prize=fit(c,r.prize,650,3,28);c.fillStyle='#fff';prize.list.forEach((line,i)=>c.fillText(line,340,y+38+i*prize.size*1.18));
+    const name=fit(c,r.name||'Número vendido',650,3,23);c.fillStyle='#b0c2d7';name.list.forEach((line,i)=>c.fillText(line,340,y+126+i*name.size*1.12));
+   });
+   c.fillStyle='#bf241b';c.fillRect(65,1240,950,3);c.fillStyle='#b0c2d7';c.font='500 21px system-ui, sans-serif';c.fillText('Juntos pelo esporte.',65,1291);
+   c.textAlign='right';c.fillText(pages>1?'Página '+(page+1)+' de '+pages:'YOKA GUARATINGUETÁ',1015,1291);
+   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('Não foi possível gerar o PNG.');
+   const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='yoka-resultados-'+snapshot.id+'-'+(page+1)+'.png';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  notice(pages+' imagem(ns) PNG preparada(s) em 1080 × 1350. Confira os downloads; o navegador pode pedir autorização para baixar várias imagens.',true);
+ }catch(e){notice(e.message);}finally{render();}
+};
 $('reset').onclick=()=>guarded(()=>{if(event){if(!confirm('Abrir uma nova rifa? O comprovante da rifa atual será baixado antes de apagar os dados deste navegador.'))return;download();localStorage.removeItem(KEY);}event=null;review=null;imported=null;$('title').value='';$('numbers').value='';$('prize').value='';notice('Nova rifa pronta para cadastro.',true);});
 $('backup').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>10e6)throw Error('Comprovante muito grande. Limite: 10 MB.');const next=validateEvent(JSON.parse(await file.text()));await guarded(()=>{if(event){if(!confirm('Substituir a rifa atual? O comprovante atual será baixado antes da substituição.'))return;download();}event=persist(localStorage,next);review=null;imported=null;notice('Comprovante restaurado. Confira a lista e o histórico.',true);});}catch(e){notice(e.message);}finally{$('backup').value='';}};
 $('fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{notice('Tela cheia indisponível neste navegador.');}};
