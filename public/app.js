@@ -10,7 +10,7 @@ function render(){
  $('total').textContent=count.toLocaleString('pt-BR');$('drawn').textContent=results.length;$('remaining').textContent=(count-results.length).toLocaleString('pt-BR');$('event-title').textContent=event?.title||'Yoka Sorteios';$('print-title').textContent=event?.title||'';
  $('status').textContent=busy?'SORTEIO EM ANDAMENTO':event?(count===results.length?'RIFA CONCLUÍDA':'LISTA CONFIRMADA'):'AGUARDANDO A LISTA';
  $('draw').disabled=!event||busy||blocked||results.length>=count||!$('prize').value.trim();$('prize').disabled=busy||blocked;
- for(const id of ['export','print','instagram'])$(id).disabled=!event||busy||blocked;
+ for(const id of ['export','instagram'])$(id).disabled=!event||busy||blocked;
  $('reset').disabled=busy||blocked;$('backup').disabled=busy||blocked;$('csv').disabled=!!event||blocked;$('check').disabled=blocked;$('confirm').disabled=busy||blocked;
  if(event)showEntries(event.entries);else if(review)showEntries(review);else $('review').hidden=true;
  const last=results.at(-1);if(!busy){$('winner').textContent=last?.number||'—';$('winner').classList.toggle('long-number',(last?.number.length||0)>6);$('winner-label').textContent=last?'NÚMERO VENCEDOR':'SEU PRÓXIMO NÚMERO DA SORTE';$('winner-name').textContent=last?`${last.name||'Número vendido'} · ${last.prize}`:'O sorteio começa com uma lista confirmada.';}
@@ -55,7 +55,6 @@ $('draw').onclick=()=>guarded(async()=>{
  void $('winner').offsetWidth;$('winner').classList.add('reveal');notice('Resultado registrado. Baixe o comprovante para guardar esta rodada.',true);
 });
 $('export').onclick=()=>{try{download();notice('Comprovante preparado para download. Confira a pasta de downloads.',true);}catch(e){notice(e.message);}};
-$('print').onclick=()=>{if(event?.results.length)window.print();else notice('Faça pelo menos um sorteio antes de imprimir.');};
 $('instagram').onclick=async()=>{
  if(busy||!event?.results.length){notice('Faça pelo menos um sorteio antes de gerar a imagem.');return;}
  const snapshot=validateEvent(event);$('instagram').disabled=true;
