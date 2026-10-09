@@ -1,0 +1,18 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {parseList,parseCSV,validateEntries,randomIndex,createEvent,drawEvent,validateEvent,persist} from '../public/core.js';
+test('somente números vendidos preservando zeros',()=>assert.deepEqual(parseList('001, 20\n45').map(x=>x.number),['001','20','45']));
+test('duplicação numérica bloqueada',()=>assert.throws(()=>parseList('001,1'),/duplicado/i));
+test('inválidos e limites bloqueados',()=>{for(const v of ['-1','1.5','abc','1234567890',''])assert.throws(()=>parseList(v));});
+test('CSV com aspas, vírgula no nome e BOM',()=>assert.deepEqual(parseCSV('\ufeffnumero,nome\r\n001,"Ana, Maria"\r\n2,"João ""JP"""').map(x=>x.name),['Ana, Maria','João "JP"']));
+test('CSV brasileiro e cabeçalho opcional nome',()=>assert.equal(parseCSV('numero;nome\n3;Ana')[0].number,'3'));
+test('CSV inválido não perde registros',()=>{for(const v of ['nome\nAna','numero,nome\n1,A,B','numero,nome\n1,"Ana'])assert.throws(()=>parseCSV(v));});
+test('rejeição elimina viés do módulo',()=>{let values=[4294967295,4];assert.equal(randomIndex(3,()=>values.shift()),1);});
+test('índice vazio bloqueado',()=>assert.throws(()=>randomIndex(0)));
+test('sorteia apenas vendidos sem repetir até esgotar',()=>{let e=createEvent('Rifa',parseList('002 77'));e=drawEvent(e,'Bola',()=>0);assert.equal(e.results[0].number,'002');e=drawEvent(e,'Camisa',()=>0);assert.equal(e.results[1].number,'77');assert.throws(()=>drawEvent(e,'Fim',()=>0),/esgotad/i);assert.equal(validateEvent(JSON.parse(JSON.stringify(e))).results.length,2);});
+test('backup rejeita vencedor fora da lista ou repetido',()=>{let e=drawEvent(createEvent('Rifa',parseList('1 2')),'Bola',()=>0);assert.throws(()=>validateEvent({...e,results:[{...e.results[0],number:'3'}]}));assert.throws(()=>validateEvent({...e,results:[e.results[0],e.results[0]]}));});
+test('backup rejeita estrutura e data inválidas',()=>{assert.throws(()=>validateEvent({}));const e=createEvent('Rifa',parseList('1'));assert.throws(()=>validateEvent({...e,createdAt:'hoje'}));});
+test('falha na persistência mantém estado original',()=>{const e=createEvent('Rifa',parseList('1'));const next=drawEvent(e,'Bola',()=>0);assert.throws(()=>persist({setItem(){throw Error('quota');}},next),/salvar/i);assert.equal(e.results.length,0);});
+test('persistência recupera evento completo',()=>{let value;const e=drawEvent(createEvent('Rifa',parseList('01')),'Bola',()=>0);persist({setItem(k,v){value=v;}},e);assert.equal(validateEvent(JSON.parse(value)).results[0].number,'01');});
+test('nome e prêmio obrigatórios',()=>{assert.throws(()=>createEvent('',parseList('1')));assert.throws(()=>drawEvent(createEvent('Rifa',parseList('1')),''));});
+test('validação rejeita campos inesperados e entradas malformadas',()=>{assert.throws(()=>validateEntries([{number:'1',name:5}]));});
