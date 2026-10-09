@@ -1,0 +1,65 @@
+name: Testar e publicar no Firebase
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Executar testes
+        run: npm test
+      - name: Verificar destino da publicação
+        run: |
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const config = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
+          if (config.hosting?.site !== 'yoka-sorteios' || config.hosting?.public !== 'public') {
+            throw new Error('Destino inesperado: use site yoka-sorteios e pasta public.');
+          }
+          JS
+
+  deploy:
+    name: Publicar site
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Conferir credencial
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_YOKA_SORTEIO }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::Cadastre FIREBASE_SERVICE_ACCOUNT_YOKA_SORTEIO nos secrets do repositório. Consulte docs/publicacao-automatica.md."
+            exit 1
+          fi
+      - name: Publicar no Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_YOKA_SORTEIO }}
+          projectId: yoka-sorteio
+          channelId: live
+          entryPoint: .
+          firebaseToolsVersion: '15.33.0'
