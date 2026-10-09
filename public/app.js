@@ -15,7 +15,7 @@ function render(){
  if(event)showEntries(event.entries);else if(review)showEntries(review);else $('review').hidden=true;
  const last=results.at(-1);if(!busy){$('winner').textContent=last?.number||'—';$('winner').classList.toggle('long-number',(last?.number.length||0)>6);$('winner-label').textContent=last?'NÚMERO VENCEDOR':'SEU PRÓXIMO NÚMERO DA SORTE';$('winner-name').textContent=last?`${last.name||'Número vendido'} · ${last.prize}`:'O sorteio começa com uma lista confirmada.';}
  $('results').replaceChildren();if(!results.length)add($('results'),'p','Os vencedores aparecerão aqui após cada rodada.','empty');
- results.forEach((r,i)=>{const row=add($('results'),'div','','result');add(row,'span',`${String(i+1).padStart(2,'0')}º`,'ordinal');add(row,'strong',r.number);const info=add(row,'div','');add(info,'b',r.prize);add(info,'small',r.name||'Número vendido');add(row,'time',new Date(r.at).toLocaleString('pt-BR'));});
+ (busy?results.slice(0,-1):results).forEach((r,i)=>{const row=add($('results'),'div','','result');add(row,'span',`${String(i+1).padStart(2,'0')}º`,'ordinal');add(row,'strong',r.number);const info=add(row,'div','');add(info,'b',r.prize);add(info,'small',r.name||'Número vendido');add(row,'time',new Date(r.at).toLocaleString('pt-BR'));});
  $('draw-hint').textContent=event&&count===results.length?'Todos os números já foram sorteados.':'Somente os números vendidos participam.';
 }
 async function guarded(action){if(busy||blocked||pending)return;pending=true;try{
@@ -31,7 +31,28 @@ $('confirm').onclick=()=>guarded(()=>{if(event)throw Error('Esta rifa já foi co
 $('draw').onclick=()=>guarded(async()=>{
  if(!event)throw Error('Confirme a lista primeiro.');const next=drawEvent(event,$('prize').value);event=persist(localStorage,next);busy=true;render();$('message').hidden=true;$('winner-label').textContent='A SORTE ESTÁ EM QUADRA';$('winner').textContent='•••';$('winner-name').textContent='Preparando a revelação…';
  // Resultado salvo antes da apresentação. Nenhum novo sorteio ocorre na animação.
- await new Promise(resolve=>setTimeout(resolve,matchMedia('(prefers-reduced-motion: reduce)').matches?0:1800));busy=false;render();notice('Resultado registrado. Baixe o comprovante para guardar esta rodada.',true);
+ $('winner').classList.remove('reveal');
+ if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+  const won=new Set(next.results.slice(0,-1).map(r=>r.number));
+  const candidates=next.entries.filter(e=>!won.has(e.number));
+  let interval=50,previous=-1;
+  $('winner').setAttribute('aria-live','off');
+  for(let frame=0;frame<42;frame++){
+   // Aleatoriedade exclusivamente visual; o vencedor já está salvo.
+   let index=Math.floor(Math.random()*candidates.length);
+   if(candidates.length>1&&index===previous)index=(index+1)%candidates.length;
+   previous=index;
+   $('winner').textContent=candidates[index].number;
+   $('winner').classList.toggle('long-number',candidates[index].number.length>6);
+   $('winner').classList.remove('rolling');void $('winner').offsetWidth;$('winner').classList.add('rolling');
+   $('winner-label').textContent=frame<25?'A SORTE ESTÁ EM QUADRA':'E O NÚMERO VENCEDOR É…';
+   $('winner-name').textContent='Os números estão na disputa…';
+   await new Promise(resolve=>setTimeout(resolve,interval));
+   if(frame>=25)interval=Math.min(350,interval*1.15);
+  }
+ }
+ busy=false;$('winner').classList.remove('rolling');render();$('winner').setAttribute('aria-live','polite');
+ void $('winner').offsetWidth;$('winner').classList.add('reveal');notice('Resultado registrado. Baixe o comprovante para guardar esta rodada.',true);
 });
 $('export').onclick=()=>{try{download();notice('Comprovante preparado para download. Confira a pasta de downloads.',true);}catch(e){notice(e.message);}};
 $('print').onclick=()=>window.print();
