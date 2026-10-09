@@ -5,3 +5,26 @@
 
 /* Troca de números com movimento e revelação final. */
 .busy .winner{animation:none;filter:none}.winner.rolling{animation:number-roll .12s ease-out}.winner.reveal{border:2px solid #739bc2;border-radius:12px;background:#0b203960;animation:number-reveal .45s ease-out forwards}@keyframes number-roll{from{transform:translateY(-10px);opacity:.45}to{transform:translateY(0);opacity:1}}@keyframes number-reveal{from{transform:scale(.96)}to{transform:scale(1.05)}}@media(prefers-reduced-motion:reduce){.winner.rolling,.winner.reveal{animation:none}}
+
+/* Divulgação dos resultados, sem controles ou lista de participantes. */
+.print-only{display:none}
+@media print{
+ @page{size:A4 portrait;margin:16mm}
+ body{font-family:system-ui,sans-serif}
+ body>header{display:flex;justify-content:center;padding:0 0 18px;margin:0;border-bottom:3px solid #bf241b}
+ header .brand-logo{width:105px;height:105px}
+ header .brand>span{display:none}
+ main .layout,main .intro,main .bottom-tools,main .storage-note,main #message,body>footer{display:none!important}
+ main{margin:0;padding:0}
+ .history{border:0;border-radius:0;margin:0;padding:22px 0;background:white}
+ .history-head{display:block;margin:0 0 22px;text-align:center}
+ .history-head .eyebrow,.history-head .tools{display:none!important}
+ .history-head h2{color:#173d61;font-size:26px;text-transform:uppercase;letter-spacing:1px;margin:0}
+ .print-only{display:block;color:#173d61!important;font-size:16px;font-weight:600;margin:10px 0;overflow-wrap:anywhere}
+ .result{grid-template-columns:45px 110px 1fr;gap:15px;padding:20px 12px;border-top:1px solid #ccd5df;break-inside:avoid}
+ .result .ordinal{color:#173d61!important;font-weight:700}
+ .result strong{color:#173d61!important;font-size:26px}
+ .result b{color:#173d61;font-size:16px}
+ .result small{color:#43566b!important;font-size:13px}
+ .result time{display:none}
+}
