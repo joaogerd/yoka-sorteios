@@ -22,3 +22,9 @@ test('ao sair da administração não deixa nomes e contatos anteriores na inter
   assert.match(ui,/state\.responses\s*=\s*\[\]/);
   assert.match(ui,/\$\('responses-table'\)\.replaceChildren\(\)/);
 });
+
+test('a conta administrativa ja autorizada no Firestore legado tambem gerencia viagens',()=>{
+  const merged=readFileSync(new URL('../firestore.merged.rules',import.meta.url),'utf8');
+  assert.match(merged,/function transportAdmin\(\) \{\s*return admin\(\) \|\|/);
+  assert.match(data,/u\.email\?\.toLowerCase\(\)\s*===\s*'adyokafutsal@gmail\.com'/);
+});
