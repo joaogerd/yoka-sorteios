@@ -1,0 +1,29 @@
+name: Verificar acesso ao projeto Transporte
+on:
+  push:
+    branches: [transporte]
+    paths: ['.github/workflows/transporte-verificar-permissoes.yml']
+permissions: {contents: read}
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar autorizacao do projeto sem acessar dados
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_YOKA_SORTEIO }}
+        shell: bash
+        run: |
+          set -e
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then echo 'Credencial Sorteios ausente'; exit 0; fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/yoka-creds.json"
+          chmod 600 "$RUNNER_TEMP/yoka-creds.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/yoka-creds.json"
+          echo 'Testando acesso somente leitura ao Hosting do projeto yoka-transporte'
+          if npx --yes firebase-tools@15.33.0 hosting:sites:list --project yoka-transporte --json > "$RUNNER_TEMP/output.json" 2>"$RUNNER_TEMP/err.log"; then
+            echo 'ACESSO_PERMITIDO'
+            node -e 'const o=require(process.argv[1]);console.log(JSON.stringify(o).slice(0,2000))' "$RUNNER_TEMP/output.json"
+          else
+            echo 'ACESSO_NEGADO'
+            tail -n 8 "$RUNNER_TEMP/err.log"
+          fi
