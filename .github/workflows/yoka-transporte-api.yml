@@ -1,0 +1,21 @@
+name: Inspecionar API publica Transporte
+on:
+  push:
+    branches: [transporte]
+    paths: ['.github/workflows/yoka-transporte-api.yml']
+permissions: {contents: read}
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ler frontend público sem consultar cadastros
+        run: |
+          python3 - <<'PY'
+          import urllib.request,re
+          root="https://yoka-transporte.web.app"
+          for path in ['/app.js','/passageiros/','/passageiros/app.js']:
+            try:
+              s=urllib.request.urlopen(root+path,timeout=12).read(22000).decode('utf8','replace')
+              print('\n===== '+path+' =====\n'+s)
+            except Exception as e:print(str(e))
+          PY
