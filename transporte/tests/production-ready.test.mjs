@@ -36,5 +36,6 @@ test('recursos principais usam URL absoluta e versao para evitar cache incorreto
 
 test('login Google cancelado tem orientacao amigavel e nao inutiliza o site',()=>{
   assert.match(ui,/auth\/popup-closed-by-user/);
-  assert.match(ui,/markOnline\(\)/);
+  assert.match(ui,/A janela de login do Google foi fechada/);
+  assert.match(ui,/state\.stopTrips=watchTrips\(true,arr=>\{markOnline\(\)/);
 });
