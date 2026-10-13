@@ -75,8 +75,16 @@ jobs:
           import fs from 'node:fs';
           const output=JSON.parse(fs.readFileSync('/tmp/yoka-hosting-sites.json','utf8'));
           if(output.status === 'error') throw Error('Firebase Hosting negou a consulta do projeto.');
-          if(!JSON.stringify(output.result||output).includes('"yoka-transporte"'))
-            throw Error('Credencial sem acesso ao site yoka-transporte do Firebase Hosting.');
+          const result=output.result||output;
+          const items=Array.isArray(result)?result:Array.isArray(result.sites)?result.sites:[];
+          const matches=items.some(item=>item?.siteId==='yoka-transporte'
+            || item?.name?.endsWith('/sites/yoka-transporte')
+            || item?.defaultUrl==='https://yoka-transporte.web.app');
+          if(!matches){
+            const names=items.map(item=>({siteId:item?.siteId||null,name:item?.name||null}));
+            console.log('Sites retornados pelo projeto:',JSON.stringify(names));
+            throw Error('O site yoka-transporte nao foi listado pela credencial.');
+          }
           console.log('::notice::Acesso real de leitura confirmado ao Firebase Hosting yoka-transporte.');
           JS
   deploy:
