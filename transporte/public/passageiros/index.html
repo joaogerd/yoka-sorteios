@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0b2f6b" />
+  <title>Yoka • Cadastro de passageiros</title>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/styles-legado.css" />
+</head>
+<body>
+  <main class="page-shell">
+    <section class="card" aria-live="polite">
+      <header class="brand">
+        <div class="badge">Y</div>
+        <div><p class="eyebrow">YOKA KIDS</p><h1>Cadastro de passageiros</h1></div>
+      </header>
+
+      <div id="codeGate" class="hidden">
+        <div class="inline-note">Página exclusiva para famílias que já reservaram lugares no ônibus. Use o link individual ou digite o código recebido do Yoka.</div>
+        <form id="codeForm" class="code-entry" style="margin-top:16px">
+          <label class="form-label" for="accessCode">Código exclusivo</label>
+          <input id="accessCode" class="text-input code-input" autocomplete="one-time-code" maxlength="19" placeholder="XXXX-XXXX-XXXX-XXXX" required />
+          <button class="primary" type="submit">Acessar cadastro</button>
+        </form>
+      </div>
+
+      <div id="loading" class="state hidden"><div class="spinner"></div><p>Validando acesso…</p></div>
+
+      <div id="error" class="state hidden">
+        <div class="status-icon error-icon">!</div>
+        <h2>Não foi possível abrir o cadastro</h2>
+        <p id="errorMessage"></p>
+        <button id="tryCodeButton" class="secondary" type="button">Tentar com código</button>
+      </div>
+
+      <form id="passengerForm" class="hidden">
+        <section class="athlete-card">
+          <span id="category" class="category"></span>
+          <h2 id="athleteName"></h2>
+          <p id="gameInfo"></p>
+        </section>
+
+        <div class="progress-box">
+          <strong id="progressText">0 de 0 passageiros cadastrados</strong>
+          <span id="reservationText"></span>
+        </div>
+
+        <div class="notice">A quantidade de lugares já está reservada e <strong>não pode ser alterada</strong>. Informe exatamente quem ocupará cada lugar.</div>
+
+        <div id="passengerList" class="passenger-list"></div>
+        <button id="submitButton" class="primary" type="submit">Enviar cadastro de passageiros</button>
+        <p class="privacy">Após o envio, a família não poderá visualizar nem editar os CPFs novamente. Correções serão feitas pela administração do Yoka.</p>
+      </form>
+
+      <div id="locked" class="state hidden">
+        <div class="status-icon success-icon">✓</div>
+        <h2>Cadastro concluído</h2>
+        <p id="lockedMessage"></p>
+        <div id="lockedProgress" class="progress-box"></div>
+        <p class="privacy">Por segurança, nomes e CPFs enviados não são exibidos novamente. Se precisar corrigir algo, fale com a administração do Yoka.</p>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="/passageiros/app.js"></script>
+</body>
+</html>

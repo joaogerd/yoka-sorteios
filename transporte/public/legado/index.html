@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0b2f6b" />
+  <title>Yoka • Passageiros</title>
+  <link rel="stylesheet" href="/styles-legado.css" />
+</head>
+<body>
+  <main class="page-shell">
+    <section class="card">
+      <header class="brand">
+        <div class="badge">Y</div>
+        <div><p class="eyebrow">YOKA KIDS</p><h1>Transporte</h1></div>
+      </header>
+      <div class="state">
+        <div class="status-icon success-icon">✓</div>
+        <h2>Cadastro de passageiros</h2>
+        <p>A confirmação de vagas já foi encerrada. Agora estamos cadastrando os nomes e CPFs de quem irá no ônibus.</p>
+        <a class="primary button-link" href="/passageiros/">Cadastrar passageiros</a>
+      </div>
+    </section>
+  </main>
+  <script>
+    const t = new URLSearchParams(location.search).get('t');
+    if (t) location.replace('/passageiros/?t=' + encodeURIComponent(t));
+  </script>
+</body>
+</html>
