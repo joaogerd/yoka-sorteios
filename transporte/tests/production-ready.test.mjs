@@ -39,3 +39,9 @@ test('login Google cancelado tem orientacao amigavel e nao inutiliza o site',()=
   assert.match(ui,/A janela de login do Google foi fechada/);
   assert.match(ui,/state\.stopTrips=watchTrips\(true,arr=>\{markOnline\(\)/);
 });
+
+test('pagina tem aparencia basica mesmo sem o arquivo CSS externo',()=>{
+  assert.match(html,/<style id="critical-style">[\s\S]*?<\/style>/);
+  assert.match(html,/#071326/);
+  assert.match(html,/class="panel"/);
+});
