@@ -39,6 +39,8 @@ jobs:
              throw Error('Cadastro de passageiros legado danificado ou ausente');
           if(!base.includes('/passageiros/?t=')) throw Error('Link de passageiros antigo sem redirecionamento');
           JS
+      - name: Inspecionar recursos publicados no site (somente leitura)
+        run: node transporte/scripts/probe-live-site.mjs
       - name: Conferir destino exclusivo do Transporte
         run: |
           node --input-type=module - <<'JS'
