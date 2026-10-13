@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function admin() { return signedIn() && exists(/databases/$(database)/documents/transportAdmins/$(request.auth.uid)) && get(/databases/$(database)/documents/transportAdmins/$(request.auth.uid)).data.active == true; }
+    function tripOpen(tripId) {
+      return exists(/databases/$(database)/documents/transportTrips/$(tripId))
+        && get(/databases/$(database)/documents/transportTrips/$(tripId)).data.published == true
+        && get(/databases/$(database)/documents/transportTrips/$(tripId)).data.status == 'open';
+    }
+    function validResponse(d) {
+      return d.keys().hasOnly(['guardian', 'phone', 'athletes', 'category', 'mode', 'quantity', 'manualVehicleId', 'ownerUid', 'createdAt', 'updatedAt'])
+        && d.keys().hasAll(['guardian', 'phone', 'athletes', 'category', 'mode', 'quantity', 'ownerUid', 'createdAt', 'updatedAt'])
+        && d.ownerUid == request.auth.uid
+        && d.guardian is string && d.guardian.size() >= 2 && d.guardian.size() <= 100
+        && d.phone is string && d.phone.size() >= 10 && d.phone.size() <= 20
+        && d.athletes is string && d.athletes.size() >= 2 && d.athletes.size() <= 180
+        && d.category is string && d.category.size() >= 1 && d.category.size() <= 25
+        && d.mode in ['bus', 'car', 'no']
+        && d.quantity is int
+        && ((d.mode == 'bus' && d.quantity >= 1 && d.quantity <= 100)
+          || (d.mode != 'bus' && d.quantity == 0))
+        && (!('manualVehicleId' in d) || d.manualVehicleId == null || (d.manualVehicleId is string && d.manualVehicleId.size() <= 100));
+    }
+    match /transportAdmins/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || admin());
+      allow list, create, update, delete: if false;
+    }
+    match /transportTrips/{tripId} {
+      allow get, list: if admin() || resource.data.published == true;
+      allow create, update, delete: if admin();
+      match /responses/{uid} {
+        allow get: if admin() || (signedIn() && request.auth.uid == uid);
+        allow list: if admin();
+        allow create: if admin() || (signedIn() && uid == request.auth.uid && tripOpen(tripId)
+          && !('manualVehicleId' in request.resource.data) && validResponse(request.resource.data));
+        allow update: if admin() || (signedIn() && uid == request.auth.uid
+          && resource.data.ownerUid == request.auth.uid && tripOpen(tripId)
+          && validResponse(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['guardian','phone','athletes','category','mode','quantity','updatedAt']));
+        allow delete: if admin();
+      }
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

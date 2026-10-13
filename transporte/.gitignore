@@ -1,0 +1,5 @@
+node_modules/
+public/firebase-config.local.js
+.firebase/
+.DS_Store
+*.log

@@ -1,0 +1,8 @@
+// Apenas para desenvolvimento fora do Firebase Hosting.
+// Copie para firebase-config.local.js e informe as configurações públicas do app Web do Firebase.
+export const firebaseConfig = {
+  apiKey: 'INSIRA_SUA_API_KEY',
+  authDomain: 'yoka-sorteio.firebaseapp.com',
+  projectId: 'yoka-sorteio',
+  appId: 'INSIRA_SEU_APP_ID'
+};
