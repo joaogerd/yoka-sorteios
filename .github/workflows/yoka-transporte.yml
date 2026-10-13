@@ -14,6 +14,22 @@ jobs:
         with: {node-version: '22'}
       - name: Testes e sintaxe
         run: cd transporte && npm run check
+      - name: Confirmar preservação do cadastro legado e proteção do projeto
+        run: |
+          test -s transporte/public/passageiros/index.html
+          test -s transporte/public/passageiros/app.js
+          test -s transporte/public/styles-legado.css
+          test -s transporte/public/firebase-config.js
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const html=fs.readFileSync('transporte/public/passageiros/index.html','utf8');
+          const code=fs.readFileSync('transporte/public/passageiros/app.js','utf8');
+          const base=fs.readFileSync('transporte/public/app.js','utf8');
+          if(!html.includes('/styles-legado.css')||!html.includes('/passageiros/app.js')||
+             !code.includes('passengerInvites')||!code.includes('passengerStatus'))
+             throw Error('Cadastro de passageiros legado danificado ou ausente');
+          if(!base.includes('/passageiros/?t=')) throw Error('Link de passageiros antigo sem redirecionamento');
+          JS
       - name: Conferir destino exclusivo do Transporte
         run: |
           node --input-type=module - <<'JS'
