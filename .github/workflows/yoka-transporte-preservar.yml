@@ -1,0 +1,33 @@
+name: Preservar pagina de passageiros existente
+on:
+  push:
+    branches: [transporte]
+    paths: ['.github/workflows/yoka-transporte-preservar.yml']
+permissions: {contents: write}
+jobs:
+  preserve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: transporte}
+      - name: Copiar somente arquivos publicos atuais
+        shell: bash
+        run: |
+          set -e
+          mkdir -p transporte/public/passageiros transporte/public/legado
+          curl -fsSL https://yoka-transporte.web.app/passageiros/ -o transporte/public/passageiros/index.html
+          curl -fsSL https://yoka-transporte.web.app/passageiros/app.js -o transporte/public/passageiros/app.js
+          curl -fsSL https://yoka-transporte.web.app/styles.css -o transporte/public/styles-legado.css
+          curl -fsSL https://yoka-transporte.web.app/firebase-config.js -o transporte/public/firebase-config.js
+          curl -fsSL https://yoka-transporte.web.app/ -o transporte/public/legado/index.html
+          sed -i 's#href="/styles.css"#href="/styles-legado.css"#g' transporte/public/passageiros/index.html transporte/public/legado/index.html
+          node --check transporte/public/passageiros/app.js
+      - name: Versionar copia dos recursos existentes
+        run: |
+          git config user.name 'Yoka Transporte CI'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add transporte/public/passageiros transporte/public/styles-legado.css transporte/public/firebase-config.js transporte/public/legado
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore(transporte): preservar cadastro de passageiros ja existente'
+            git push origin HEAD:transporte
+          fi
