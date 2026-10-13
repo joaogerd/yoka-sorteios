@@ -1,76 +1,46 @@
-name: Publicar Yoka Transporte
+name: Testar e publicar Yoka Transporte
 on:
   push:
     branches: [transporte]
-    paths:
-      - 'transporte/**'
-      - '.github/workflows/yoka-transporte.yml'
+    paths: ['transporte/**','.github/workflows/yoka-transporte.yml']
   workflow_dispatch:
-permissions:
-  contents: write
-concurrency:
-  group: yoka-transporte-prod
-  cancel-in-progress: false
+permissions: {contents: read}
 jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Expandir o pacote e reaproveitar o logo oficial
-        run: |
-          base64 -d transporte/source.bundle.b64 | tar -xJ -C transporte
-          cp public/yoka-logo.png transporte/public/yoka-logo.png
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - name: Testes e sintaxe
         run: cd transporte && npm run check
-      - name: Publicar também os fontes legíveis na branch
-        run: |
-          git config user.name "Yoka Transporte CI"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add transporte
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: expandir os fontes do Yoka Transporte"
-            git push origin HEAD:transporte
-          fi
-      - name: Impedir publicação acidental do Sorteios
+      - name: Conferir destino exclusivo do Transporte
         run: |
           node --input-type=module - <<'JS'
           import fs from 'node:fs';
-          const c=JSON.parse(fs.readFileSync('transporte/firebase.json'));
-          if(c.hosting.site!=='yoka-transporte' || c.hosting.public!=='public')throw Error('Destino incorreto');
+          const config=JSON.parse(fs.readFileSync('transporte/firebase.json'));
+          const projects=JSON.parse(fs.readFileSync('transporte/.firebaserc'));
+          if(config.hosting.site!=='yoka-transporte'||config.hosting.public!=='public'||projects.projects.default!=='yoka-transporte')throw Error('Destino Firebase inválido');
+          if(config.firestore)throw Error('Não pode publicar regras do Firestore antigo nesta rotina');
           JS
   deploy:
     needs: checks
-    if: github.ref == 'refs/heads/transporte'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Expandir arquivos para publicação
-        run: |
-          base64 -d transporte/source.bundle.b64 | tar -xJ -C transporte
-          cp public/yoka-logo.png transporte/public/yoka-logo.png
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
-      - name: Configurar credencial
+      - name: Conferir credencial do projeto Yoka Transporte
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_YOKA_SORTEIO }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_YOKA_TRANSPORTE }}
         run: |
-          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then echo '::error::Secret Firebase não encontrado'; exit 1; fi
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/yoka-service-account.json"
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/yoka-service-account.json" >> "$GITHUB_ENV"
-      - name: Verificar/criar site dedicado
-        run: |
-          cd transporte
-          npx --yes firebase-tools@15.33.0 hosting:sites:list --project yoka-sorteio --json > "$RUNNER_TEMP/sites.json"
-          if ! node -e 'const r=require(process.argv[1]);process.exit(JSON.stringify(r).includes("yoka-transporte")?0:1)' "$RUNNER_TEMP/sites.json"; then
-            npx --yes firebase-tools@15.33.0 hosting:sites:create yoka-transporte --project yoka-sorteio
-          fi
-      - name: Publicar apenas Yoka Transporte
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then echo '::error::Cadastre a credencial do projeto yoka-transporte no secret FIREBASE_SERVICE_ACCOUNT_YOKA_TRANSPORTE'; exit 1; fi
+      - name: Publicar somente Hosting do projeto original
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_YOKA_SORTEIO }}
-          projectId: yoka-sorteio
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_YOKA_TRANSPORTE }}
+          projectId: yoka-transporte
           channelId: live
           entryPoint: transporte
           firebaseToolsVersion: '15.33.0'
