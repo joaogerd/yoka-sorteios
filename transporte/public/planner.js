@@ -6,12 +6,16 @@ export const normalizeVehicles = (vehicles = []) => vehicles
 
 export function planTrip(responses = [], vehicles = []) {
   const available = normalizeVehicles(vehicles);
-  const requests = responses.filter(r => r.mode === 'bus' && Number.isInteger(Number(r.quantity)) && Number(r.quantity) > 0)
-    .map(r => ({...r, id: String(r.id), quantity: Math.trunc(Number(r.quantity))}));
+  const busReplies = responses.filter(r => r.mode === 'bus');
+  const validQuantity = r => Number.isInteger(Number(r.quantity)) && Number(r.quantity) >= 1 && Number(r.quantity) <= 100;
+  const invalid = busReplies.filter(r => !validQuantity(r))
+    .map(r => ({...r, id: String(r.id), quantity: Number.isFinite(Number(r.quantity)) ? Math.max(0, Number(r.quantity)) : 0}));
+  const requests = busReplies.filter(validQuantity)
+    .map(r => ({...r, id: String(r.id), quantity: Number(r.quantity)}));
   const passengers = requests.reduce((n, r) => n + r.quantity, 0);
   const carFamilies = responses.filter(r => r.mode === 'car').length;
   const declinedFamilies = responses.filter(r => r.mode === 'no').length;
-  if (!passengers) return { passengers:0, carFamilies, declinedFamilies, selected:[], assignments:[], unassigned:[], capacity:0, free:0, feasible:true };
+  if (!passengers && !invalid.length) return { passengers:0, carFamilies, declinedFamilies, selected:[], assignments:[], unassigned:[], capacity:0, free:0, feasible:true };
 
   const mandatory = new Set(requests.map(r => r.manualVehicleId).filter(Boolean));
   const missingPinned = requests.filter(r => r.manualVehicleId && !available.some(v => v.id === r.manualVehicleId));
@@ -27,11 +31,11 @@ export function planTrip(responses = [], vehicles = []) {
   viable.sort((a,b)=>a.subset.length-b.subset.length || a.capacity-b.capacity || a.subset.map(v=>v.label).join().localeCompare(b.subset.map(v=>v.label).join()));
   for (const candidate of viable) {
     const assigned = exactPacking(requests, candidate.subset);
-    if (assigned) return assemble(requests, responses, candidate.subset, assigned, carFamilies, declinedFamilies, passengers);
+    if (assigned) return assemble(requests, responses, candidate.subset, assigned, carFamilies, declinedFamilies, passengers, invalid);
   }
   const fallback = available.slice().sort((a,b)=>b.capacity-a.capacity);
   const allocation = partialPacking(requests, fallback);
-  return assemble(requests, responses, fallback, allocation, carFamilies, declinedFamilies, passengers);
+  return assemble(requests, responses, fallback, allocation, carFamilies, declinedFamilies, passengers, invalid);
 }
 
 function exactPacking(requests, vehicles) {
@@ -78,14 +82,21 @@ function partialPacking(requests, vehicles) {
   return assigned;
 }
 
-function assemble(requests, responses, subset, allocated, carFamilies, declinedFamilies, passengers) {
+function assemble(requests, responses, subset, allocated, carFamilies, declinedFamilies, passengers, invalid = []) {
   const usedIds = new Set(allocated.values());
   const selected = subset.filter(v=>usedIds.has(v.id)).map(v=>({ ...v, used:requests.filter(r=>allocated.get(r.id)===v.id).reduce((s,r)=>s+r.quantity,0) }));
   const assignments = requests.filter(r=>allocated.has(r.id)).map(r=>({ ...r, vehicleId:allocated.get(r.id) }));
-  const unassigned = requests.filter(r=>!allocated.has(r.id));
+  const unassigned = requests.filter(r=>!allocated.has(r.id)).concat(invalid);
   const capacity = selected.reduce((n,v)=>n+v.capacity,0);
   return { passengers, carFamilies, declinedFamilies, selected, assignments, unassigned, capacity, free:capacity-assignments.reduce((n,r)=>n+r.quantity,0), feasible:unassigned.length===0 };
 }
 
 export function escapeHtml(value) {return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-export function csvExport(rows) {return '\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');}
+export function csvExport(rows) {
+  return '\uFEFF' + rows.map(row => row.map(value => {
+    let cell=String(value ?? '');
+    // Planilhas podem executar fórmulas mesmo quando a célula CSV está entre aspas.
+    if (/^[\s\x00-\x1F]*[=+@-]/.test(cell)) cell="'"+cell;
+    return '"'+cell.replace(/"/g,'""')+'"';
+  }).join(';')).join('\r\n');
+}
