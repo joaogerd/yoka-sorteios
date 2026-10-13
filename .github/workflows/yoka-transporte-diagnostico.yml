@@ -1,0 +1,20 @@
+name: Diagnosticar projeto do Transporte
+on:
+  push:
+    branches: [transporte]
+    paths: ['.github/workflows/yoka-transporte-diagnostico.yml']
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Identificar Hosting do endereço solicitado
+        shell: bash
+        run: |
+          echo 'Cabeçalhos públicos:'
+          curl -sIL --max-time 15 https://yoka-transporte.web.app/ | head -30 || true
+          echo 'Firebase init público (somente projectId, authDomain, appId):'
+          curl -sfL --max-time 15 https://yoka-transporte.web.app/__/firebase/init.json | node -e "let s='';process.stdin.on('data',x=>s+=x);process.stdin.on('end',()=>{try{const j=JSON.parse(s);console.log(JSON.stringify({projectId:j.projectId,authDomain:j.authDomain,appId:j.appId}));}catch{console.log('init.json indisponível: '+s.slice(0,180))}})" || true
+          echo 'Corpo inicial:'
+          curl -sfL --max-time 15 https://yoka-transporte.web.app/ | head -c 800 || true
