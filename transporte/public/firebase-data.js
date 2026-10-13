@@ -1,6 +1,7 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js';
 import {getAuth, signInAnonymously, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
 import {getFirestore, collection, doc, addDoc, setDoc, updateDoc, getDoc, getDocs, onSnapshot, query, where, serverTimestamp, deleteDoc} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js';
+import {isConfiguredAdminEmail} from './admin-access.js';
 
 let app, auth, db;
 let currentUser;
@@ -45,7 +46,7 @@ export const userIsAnonymous=()=>getUser()?.isAnonymous!==false;
 export async function anonymousLogin(){const r=await signInAnonymously(auth);currentUser=r.user;return r.user;}
 export async function googleLogin(){const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});const r=await signInWithPopup(auth,provider);currentUser=r.user;return r.user;}
 export async function logout(){await signOut(auth);return anonymousLogin();}
-export async function isAdmin(){const u=getUser();if(!u||u.isAnonymous)return false;if(u.email?.toLowerCase() === 'adyokafutsal@gmail.com')return true;const snap=await getDoc(doc(db,'transportAdmins',u.uid));return snap.exists()&&snap.data().active===true;}
+export async function isAdmin(){const u=getUser();if(!u||u.isAnonymous)return false;if(isConfiguredAdminEmail(u.email))return true;const snap=await getDoc(doc(db,'transportAdmins',u.uid));return snap.exists()&&snap.data().active===true;}
 export function watchTrips(isAdminUser,onData,onError){const ref=collection(db,'transportTrips');return onSnapshot(isAdminUser?ref:query(ref,where('published','==',true)),snap=>onData(snap.docs.map(s=>({id:s.id,...s.data()}))),onError);}
 export function watchMyResponse(tripId,callback,onError){return onSnapshot(doc(db,'transportTrips',tripId,'responses',getUser().uid),snap=>callback(snap.exists()?{id:snap.id,...snap.data()}:null),onError);}
 export function watchResponses(tripId,callback,onError){return onSnapshot(collection(db,'transportTrips',tripId,'responses'),snap=>callback(snap.docs.map(s=>({id:s.id,...s.data()}))),onError);}
