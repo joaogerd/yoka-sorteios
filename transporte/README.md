@@ -13,7 +13,7 @@ Aplicativo móvel/web para organizar transportes de jogos e competições do Yok
 
 ## Segurança e privacidade
 
-O cadastro de atletas fica no projeto `presencasimplesyoka` e NÃO é exposto a famílias pelo frontend. O aplicativo de transporte utiliza um conjunto separado de coleções no projeto `yoka-sorteio`: `transportTrips`, `transportAdmins` e suas subcoleções `responses`. O nome informado da criança é coletado diretamente do responsável. A integração automática com o cadastro existente exige uma credencial/ponte administrativa explícita no projeto original e não é ativada por padrão.
+O cadastro de atletas fica no projeto `presencasimplesyoka` e NÃO é exposto a famílias pelo frontend. O aplicativo de transporte utiliza um conjunto separado de coleções no projeto `yoka-transporte`: `transportTrips`, `transportAdmins` e suas subcoleções `responses`. O nome informado da criança é coletado diretamente do responsável. A integração automática com o cadastro existente exige uma credencial/ponte administrativa explícita no projeto original e não é ativada por padrão.
 
 - Famílias só conseguem ver suas próprias respostas. Só administradores podem listar todas, configurar viagens e alocar veículos.
 - Quem tem o link público consegue ver informações publicadas da viagem, mas não a lista de crianças/WhatsApps.
@@ -23,10 +23,10 @@ O cadastro de atletas fica no projeto `presencasimplesyoka` e NÃO é exposto a 
 
 ## Configuração Firebase necessária
 
-1. Usar projeto Firebase `yoka-sorteio` (mesmo projeto do Sorteios), mas criar **outro site Hosting**, ID `yoka-transporte`, sem alterar `yoka-sorteios`.
-2. No projeto `yoka-sorteio`, habilitar **Cloud Firestore** no banco padrão `(default)` (se ainda não estiver habilitado).
-3. Ativar Firebase Authentication: provedores **Anônimo** e **Google**. Adicionar `yoka-transporte.web.app` aos domínios autorizados se necessário.
-4. Publicar regras `firestore.rules`. **Antes de publicar**, verifique se já há outras coleções/regras no projeto; a publicação substitui as regras existentes. Se houver outros aplicativos usando o mesmo banco, faça merge das regras de `transportTrips`/`transportAdmins` e preserve as atuais. Nunca publique este arquivo isoladamente sobre regras de outro app.
+1. Usar projeto Firebase **existente** `yoka-transporte`, que já tem o site `yoka-transporte.web.app` e a página `/passageiros/`. Preservar o fluxo antigo na publicação. NÃO criar outro site.
+2. No projeto `yoka-transporte`, conferir **Cloud Firestore** no banco padrão `(default)` (se ainda não estiver habilitado).
+3. Conferir/ativar Firebase Authentication: provedores **Anônimo** e **Google**. Adicionar `yoka-transporte.web.app` aos domínios autorizados se necessário.
+4. No projeto existente há páginas e funcionalidades operacionais: **não publique o arquivo `firestore.rules` isoladamente**, pois substituiria as regras existentes. Mescle apenas os blocos `transportTrips`/`transportAdmins` com as regras atuais do projeto por um administrador autorizado; o `firebase.json` do site intencionalmente não define implantação de regras.
 5. O Hosting serve automaticamente `/__/firebase/init.json` com config do projeto. Fora do Hosting, copie `public/firebase-config.local.js.example` para `public/firebase-config.local.js` com a config Web do Console Firebase.
 6. Faça login no site com a conta Google que será administradora (o erro inicial informará seu UID). No Console Firebase > Firestore > Iniciar coleção `transportAdmins` > ID do documento = UID > campo booleano `active = true`. Recarregue a página. **Esse passo é indispensável** e não pode ser autorizado pelo próprio navegador.
 7. Crie uma viagem e confira a confirmação em outro navegador/celular, inclusive a atualização em tempo real no painel.
@@ -43,12 +43,14 @@ python3 -m http.server 8081 -d public
 
 ```sh
 npm test
-npx firebase-tools@15.33.0 hosting:sites:create yoka-transporte --project yoka-sorteio  # somente a primeira vez
-npx firebase-tools@15.33.0 deploy --only hosting --project yoka-sorteio
-# Regras APENAS após verificar compatibilidade com o banco existente:
-npx firebase-tools@15.33.0 deploy --only firestore:rules --project yoka-sorteio
+npx firebase-tools@15.33.0 deploy --only hosting --project yoka-transporte
+# NÃO publicar firestore.rules isoladamente: mesclar com regras atuais do projeto existente primeiro.
 ```
 
 ## Organização do repositório
 
-O código pode viver em `transporte/` na branch `transporte` do repositório `joaogerd/yoka-sorteios`, sem alterar a versão principal do sorteador. Um workflow próprio na branch executa `npm test`, garante a existência do Hosting `yoka-transporte` e publica **somente Hosting** usando o secret já existente `FIREBASE_SERVICE_ACCOUNT_YOKA_SORTEIO`. Regras Firestore requerem uma publicação separada e consciente.
+O código vive em `transporte/` na branch `transporte` de `joaogerd/yoka-sorteios`, sem alterar a versão principal do sorteador. O workflow de testes é automático. A publicação é **somente manual** via GitHub Actions, depois de cadastrar uma credencial do projeto certo no secret `FIREBASE_SERVICE_ACCOUNT_YOKA_TRANSPORTE`. Ele publica apenas Hosting e não muda Firestore, Authentication nem Cloud Functions. O conteúdo anterior `/passageiros/`, sua folha de estilo e configuração Firebase deve ser preservado.
+
+## Compatibilidade com o sistema antigo
+
+O site existente hospeda a página `/passageiros/` (com credenciais e cadastro via código individual), cujo acesso deve continuar funcionando. O frontend existente usa App Check Enterprise e Cloud Functions de confirmação por convite. **Esta versão introduz viagens com respostas próprias; não migra automaticamente confirmações antigas.** Não elimine coleções, Functions ou regras atuais.
