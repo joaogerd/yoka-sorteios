@@ -1,0 +1,163 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function admin() {
+      return request.auth != null
+        && request.auth.token.email == 'adyokafutsal@gmail.com';
+    }
+
+    function invite(id) {
+      return get(/databases/$(database)/documents/passengerInvites/$(id)).data;
+    }
+
+    function currentStatus(id) {
+      return get(/databases/$(database)/documents/passengerStatus/$(id)).data;
+    }
+
+    function canFamilySubmit(id) {
+      return exists(/databases/$(database)/documents/passengerInvites/$(id))
+        && exists(/databases/$(database)/documents/passengerStatus/$(id))
+        && invite(id).active == true
+        && (currentStatus(id).completed == false || currentStatus(id).reopened == true);
+    }
+
+    function validPerson(p, expectedType) {
+      return p is map
+        && p.keys().hasOnly(['type', 'name', 'cpf'])
+        && p.type == expectedType
+        && p.name is string
+        && p.name.size() >= 3
+        && p.name.size() <= 140
+        && p.cpf is string
+        && p.cpf.matches('^[0-9]{11}$');
+    }
+
+    function uniqueCpfs(p, n) {
+      return (n < 2 || p[0].cpf != p[1].cpf)
+        && (n < 3 || (p[0].cpf != p[2].cpf && p[1].cpf != p[2].cpf))
+        && (n < 4 || (p[0].cpf != p[3].cpf && p[1].cpf != p[3].cpf && p[2].cpf != p[3].cpf))
+        && (n < 5 || (p[0].cpf != p[4].cpf && p[1].cpf != p[4].cpf && p[2].cpf != p[4].cpf && p[3].cpf != p[4].cpf))
+        && (n < 6 || (p[0].cpf != p[5].cpf && p[1].cpf != p[5].cpf && p[2].cpf != p[5].cpf && p[3].cpf != p[5].cpf && p[4].cpf != p[5].cpf));
+    }
+
+    function validPassengerData(id) {
+      let inv = invite(id);
+      let p = request.resource.data.passengers;
+      let n = inv.reservedSeats;
+      return request.resource.data.keys().hasOnly(['passengers', 'locked', 'submittedAt'])
+        && request.resource.data.locked == true
+        && request.resource.data.submittedAt is timestamp
+        && p is list
+        && n >= 1 && n <= 6
+        && p.size() == n
+        && validPerson(p[0], 'atleta')
+        && p[0].name == inv.athleteName
+        && (n < 2 || validPerson(p[1], 'acompanhante'))
+        && (n < 3 || validPerson(p[2], 'acompanhante'))
+        && (n < 4 || validPerson(p[3], 'acompanhante'))
+        && (n < 5 || validPerson(p[4], 'acompanhante'))
+        && (n < 6 || validPerson(p[5], 'acompanhante'))
+        && uniqueCpfs(p, n);
+    }
+
+    match /passengerInvites/{inviteId} {
+      allow get: if true;
+      allow list: if admin();
+      allow create, update, delete: if admin();
+    }
+
+    match /accessCodes/{codeKey} {
+      allow get: if true;
+      allow list: if admin();
+      allow create, update, delete: if admin();
+    }
+
+    match /passengerStatus/{inviteId} {
+      allow get: if true;
+      allow list: if admin();
+      allow create, delete: if admin();
+      allow update: if admin() || (
+        canFamilySubmit(inviteId)
+        && request.resource.data.keys().hasOnly(['completed', 'reopened', 'completedCount', 'updatedAt'])
+        && request.resource.data.completed == true
+        && request.resource.data.reopened == false
+        && request.resource.data.completedCount == invite(inviteId).reservedSeats
+        && request.resource.data.updatedAt is timestamp
+        && existsAfter(/databases/$(database)/documents/passengerData/$(inviteId))
+      );
+    }
+
+    match /passengerData/{inviteId} {
+      allow get, list: if admin();
+      allow delete: if admin();
+      allow create, update: if admin() || (
+        canFamilySubmit(inviteId)
+        && validPassengerData(inviteId)
+        && getAfter(/databases/$(database)/documents/passengerStatus/$(inviteId)).data.completed == true
+        && getAfter(/databases/$(database)/documents/passengerStatus/$(inviteId)).data.reopened == false
+        && getAfter(/databases/$(database)/documents/passengerStatus/$(inviteId)).data.completedCount == invite(inviteId).reservedSeats
+      );
+    }
+
+    // Gestão de viagens e respostas do Yoka Transporte.
+    // Os matches e permissões existentes acima foram preservados.
+    function transportSignedIn() {
+      return request.auth != null;
+    }
+    function transportAdmin() {
+      return admin() || (transportSignedIn()
+        && exists(/databases/$(database)/documents/transportAdmins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/transportAdmins/$(request.auth.uid)).data.active == true);
+    }
+    function transportTripOpen(tripId) {
+      return exists(/databases/$(database)/documents/transportTrips/$(tripId))
+        && get(/databases/$(database)/documents/transportTrips/$(tripId)).data.published == true
+        && get(/databases/$(database)/documents/transportTrips/$(tripId)).data.status == 'open';
+    }
+    function validTransportResponse(d) {
+      return d.keys().hasOnly(['guardian','phone','athletes','category','mode','quantity','manualVehicleId','ownerUid','createdAt','updatedAt'])
+        && d.keys().hasAll(['guardian','phone','athletes','category','mode','quantity','ownerUid','createdAt','updatedAt'])
+        && d.ownerUid == request.auth.uid
+        && d.guardian is string && d.guardian.size() >= 2 && d.guardian.size() <= 100
+        && d.phone is string && d.phone.size() >= 10 && d.phone.size() <= 20
+        && d.athletes is string && d.athletes.size() >= 2 && d.athletes.size() <= 180
+        && d.category is string && d.category.size() >= 1 && d.category.size() <= 25
+        && d.mode in ['bus','car','no']
+        && d.quantity is int
+        && ((d.mode == 'bus' && d.quantity >= 1 && d.quantity <= 100)
+          || (d.mode != 'bus' && d.quantity == 0))
+        && (!('manualVehicleId' in d) || d.manualVehicleId == null
+          || (d.manualVehicleId is string && d.manualVehicleId.size() <= 100));
+    }
+    match /transportAdmins/{uid} {
+      allow get: if transportSignedIn() && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
+    }
+    match /transportTrips/{tripId} {
+      allow get, list: if transportAdmin() || resource.data.published == true;
+      allow create, update, delete: if transportAdmin();
+      match /responses/{uid} {
+        allow get: if transportAdmin() || (transportSignedIn() && request.auth.uid == uid);
+        allow list: if transportAdmin();
+        allow create: if transportAdmin()
+          || (transportSignedIn() && request.auth.uid == uid
+            && transportTripOpen(tripId)
+            && !('manualVehicleId' in request.resource.data)
+            && validTransportResponse(request.resource.data));
+        allow update: if transportAdmin()
+          || (transportSignedIn() && request.auth.uid == uid
+            && resource.data.ownerUid == request.auth.uid
+            && transportTripOpen(tripId)
+            && validTransportResponse(request.resource.data)
+            && request.resource.data.createdAt == resource.data.createdAt
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['guardian','phone','athletes','category','mode','quantity','updatedAt']));
+        allow delete: if transportAdmin();
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
