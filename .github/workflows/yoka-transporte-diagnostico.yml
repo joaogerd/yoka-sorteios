@@ -9,12 +9,25 @@ jobs:
   inspect:
     runs-on: ubuntu-latest
     steps:
-      - name: Identificar Hosting do endereço solicitado
+      - name: Inspecionar somente recursos públicos do Hosting existente
         shell: bash
         run: |
-          echo 'Cabeçalhos públicos:'
-          curl -sIL --max-time 15 https://yoka-transporte.web.app/ | head -30 || true
-          echo 'Firebase init público (somente projectId, authDomain, appId):'
-          curl -sfL --max-time 15 https://yoka-transporte.web.app/__/firebase/init.json | node -e "let s='';process.stdin.on('data',x=>s+=x);process.stdin.on('end',()=>{try{const j=JSON.parse(s);console.log(JSON.stringify({projectId:j.projectId,authDomain:j.authDomain,appId:j.appId}));}catch{console.log('init.json indisponível: '+s.slice(0,180))}})" || true
-          echo 'Corpo inicial:'
-          curl -sfL --max-time 15 https://yoka-transporte.web.app/ | head -c 800 || true
+          set -e
+          python3 - <<'PY'
+          import re,urllib.request,json
+          root="https://yoka-transporte.web.app"
+          def fetch(path):
+              try:
+                  with urllib.request.urlopen(root+path,timeout=15) as res:
+                      return res.read(250000).decode('utf-8','replace')
+              except Exception as e:return 'ERRO '+str(e)
+          config=json.loads(fetch('/__/firebase/init.json'))
+          print('FIREBASE', {x:config.get(x) for x in ('projectId','authDomain','appId')})
+          html=fetch('/')
+          print('ROOT HTML',html[:1300])
+          for path in ('/passageiros.html','/passageiros/','/styles.css','/app.js','/firebase.js','/scripts.js'):
+              data=fetch(path)
+              print('PATH',path,'LENGTH',len(data),'BEGIN',repr(data[:120]))
+              if 'javascript' in data[:120].lower() or 'import ' in data or ('app.js' in path):
+                  print('REFERENCIAS',list(set(re.findall(r'(?:collection|doc|firebase|db)[^;\n]{0,140}',data,re.I)))[:12])
+          PY
