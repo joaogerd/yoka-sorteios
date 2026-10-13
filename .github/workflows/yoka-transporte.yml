@@ -39,6 +39,25 @@ jobs:
           if(config.hosting.site!=='yoka-transporte'||config.hosting.public!=='public'||projects.projects.default!=='yoka-transporte')throw Error('Destino Firebase inválido');
           if(config.firestore)throw Error('Não pode publicar regras do Firestore antigo nesta rotina');
           JS
+  access-check:
+    needs: checks
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conferir disponibilidade da credencial sem exibir dados secretos
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_YOKA_TRANSPORTE }}
+        run: |
+          node --input-type=module - <<'JS'
+          const secret = process.env.FIREBASE_SERVICE_ACCOUNT;
+          if (!secret) {
+            console.log('::notice::PENDENTE: criar o secret FIREBASE_SERVICE_ACCOUNT_YOKA_TRANSPORTE para habilitar o deploy.');
+          } else {
+            const obj = JSON.parse(secret);
+            if (obj.project_id !== 'yoka-transporte') throw Error('Credencial pertence a projeto diferente de yoka-transporte.');
+            console.log('::notice::Credencial do projeto yoka-transporte cadastrada no GitHub.');
+          }
+          JS
   deploy:
     needs: checks
     if: github.event_name == 'workflow_dispatch'
