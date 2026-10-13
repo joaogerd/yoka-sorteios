@@ -28,3 +28,13 @@ test('a conta administrativa ja autorizada no Firestore legado tambem gerencia v
   assert.match(merged,/function transportAdmin\(\) \{\s*return admin\(\) \|\|/);
   assert.match(data,/u\.email\?\.toLowerCase\(\)\s*===\s*'adyokafutsal@gmail\.com'/);
 });
+
+test('recursos principais usam URL absoluta e versao para evitar cache incorreto',()=>{
+  assert.match(html,/href="\/styles\.css\?v=[\w.-]+"/);
+  assert.match(html,/src="\/app\.js\?v=[\w.-]+"/);
+});
+
+test('login Google cancelado tem orientacao amigavel e nao inutiliza o site',()=>{
+  assert.match(ui,/auth\/popup-closed-by-user/);
+  assert.match(ui,/markOnline\(\)/);
+});
