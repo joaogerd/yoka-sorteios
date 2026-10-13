@@ -19,3 +19,27 @@ test('alocação manual é respeitada',()=>{const responses=[{id:'a',mode:'bus',
 test('alocação manual inválida gera pendência',()=>{const r=planTrip([{id:'a',mode:'bus',quantity:4,manualVehicleId:'sumiu'}],vehicles);assert.equal(r.feasible,false);});
 test('sem passageiros',()=>{const r=planTrip([{mode:'car'},{mode:'no'}],vehicles);assert.equal(r.passengers,0);assert.equal(r.selected.length,0);assert.equal(r.carFamilies,1)});
 test('protege HTML e CSV',()=>{assert.equal(escapeHtml('<img onerror="x">'),'&lt;img onerror=&quot;x&quot;&gt;');assert.match(csvExport([['Nome','Observação'],['Fulano','a"b']]),/"a""b"/)});
+
+
+test('reserva de onibus com quantidade invalida permanece pendente e nao some da contagem de grupos',()=>{
+  for(const quantity of [0,-2,'abc',1.5,101]){
+    const r=planTrip([{id:'invalida',mode:'bus',quantity}],vehicles);
+    assert.equal(r.feasible,false, String(quantity));
+    assert.equal(r.unassigned.length,1, String(quantity));
+    assert.equal(r.unassigned[0].id,'invalida');
+  }
+});
+test('reserva valida continua sendo alocada mesmo havendo reserva invalida',()=>{
+  const r=planTrip([{id:'boa',mode:'bus',quantity:15},{id:'ruim',mode:'bus',quantity:'indefinido'}],vehicles);
+  assert.equal(r.feasible,false);
+  assert.equal(r.assignments.length,1);
+  assert.equal(r.assignments[0].id,'boa');
+  assert.equal(r.unassigned[0].id,'ruim');
+});
+test('CSV escapa formulas perigosas na abertura em planilhas',()=>{
+  const csv=csvExport([['Nome','Telefone'],['=HYPERLINK("https://x")','+5512999999999'],['-1','@SUM(1)']]);
+  assert.ok(csv.includes('"'+'\''+'=HYPERLINK('));
+  assert.ok(csv.includes('"'+'\''+'+5512999999999"'));
+  assert.ok(csv.includes('"'+'\''+'-1"'));
+  assert.ok(csv.includes('"'+'\''+'@SUM(1)"'));
+});
