@@ -13,7 +13,12 @@ export async function initFirebase() {
   if (!config?.apiKey) {
     try {const mod=await import('./firebase-config.local.js');config=mod.firebaseConfig;} catch {}
   }
-  if (!config?.apiKey) throw Error('Firebase não configurado. Abra pelo Firebase Hosting ou crie public/firebase-config.local.js conforme o README.');
+  if (!config?.apiKey) {
+    // A configuração Web do projeto é pública e já é usada pelo cadastro anterior.
+    const {firebaseConfig} = await import('./firebase-config.js');
+    config = firebaseConfig;
+  }
+  if (!config?.apiKey) throw Error('Configuração pública do Firebase inválida. Confira public/firebase-config.js.');
   app=initializeApp(config);
   // O projeto existente usa App Check Enterprise para proteger Firestore.
   try {
