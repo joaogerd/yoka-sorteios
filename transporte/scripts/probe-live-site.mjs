@@ -13,3 +13,16 @@ for(const path of paths){
       firebaseConfig:path==='/__/firebase/init.json'&&body.includes('apiKey')}));
   }catch(e){console.log(JSON.stringify({path,error:String(e)}))}
 }
+
+try{
+  const config=await (await fetch(origin+'/__/firebase/init.json')).json();
+  const response=await fetch('https://identitytoolkit.googleapis.com/v1/projects?key='+encodeURIComponent(config.apiKey));
+  const data=await response.json();
+  console.log(JSON.stringify({check:'firebase-auth-public-config',status:response.status,
+    projectMatches:data.projectId==='yoka-transporte',
+    domainAuthorized:data.authorizedDomains?.includes('yoka-transporte.web.app')===true,
+    anonymousProviderInspectable:typeof data.enableAnonymousUser==='boolean',
+    anonymousEnabled:typeof data.enableAnonymousUser==='boolean'?data.enableAnonymousUser:undefined,
+    errorCode:data.error?.code||undefined
+  }));
+}catch(e){console.log(JSON.stringify({check:'firebase-auth-public-config',error:String(e)}))}
