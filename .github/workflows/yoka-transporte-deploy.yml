@@ -1,0 +1,37 @@
+name: Implantar Yoka Transporte (manual)
+on:
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: transporte
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Validar projeto antes da publicacao
+        run: |
+          cd transporte
+          npm run check
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const cfg=JSON.parse(fs.readFileSync('firebase.json','utf8'));
+          const rc=JSON.parse(fs.readFileSync('.firebaserc','utf8'));
+          if(cfg.hosting.site!=='yoka-transporte'||cfg.hosting.public!=='public'||rc.projects.default!=='yoka-transporte'||cfg.firestore)throw Error('Configuracao Firebase insegura.');
+          if(!fs.existsSync('public/passageiros/index.html')||!fs.existsSync('public/passageiros/app.js')||!fs.existsSync('public/firebase-config.js')||!fs.existsSync('public/yoka-logo.png'))throw Error('Arquivo obrigatorio do legado ausente');
+          JS
+      - name: Credencial do projeto correto
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_YOKA_TRANSPORTE }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then echo "::error::Configure o secret FIREBASE_SERVICE_ACCOUNT_YOKA_TRANSPORTE"; exit 1; fi
+      - name: Publicar SOMENTE Hosting, preservando Firestore e Cloud Functions
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_YOKA_TRANSPORTE }}
+          projectId: yoka-transporte
+          channelId: live
+          entryPoint: transporte
+          firebaseToolsVersion: '15.33.0'
