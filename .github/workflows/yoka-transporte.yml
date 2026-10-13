@@ -14,6 +14,11 @@ jobs:
         with: {node-version: '22'}
       - name: Testes e sintaxe
         run: cd transporte && npm run check
+      - name: Compilar regras mescladas no emulador local do Firestore (sem publicar)
+        timeout-minutes: 5
+        run: |
+          cd transporte
+          npx --yes firebase-tools@15.33.0 emulators:exec --only firestore --project demo-yoka-transporte --config firebase.emulator.json "node -e 'console.log(\"Regras carregadas no emulador Firestore\")'"
       - name: Confirmar preservação do cadastro legado e proteção do projeto
         run: |
           test -s transporte/public/passageiros/index.html
