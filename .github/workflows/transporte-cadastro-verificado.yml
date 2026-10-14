@@ -1,0 +1,32 @@
+name: Testar validação cadastral do transporte
+on:
+  push:
+    branches: [feature/transporte-cadastro-verificado]
+    paths:
+      - 'transporte/**'
+      - '.github/workflows/transporte-cadastro-verificado.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Testar scripts sem acesso a dados de produção
+        run: cd transporte && npm run check
+      - name: Conferir separação de projetos e regras de bloqueio
+        run: |
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const rules=fs.readFileSync('transporte/firestore.verified.rules','utf8');
+          const code=fs.readFileSync('transporte/functions/index.js','utf8');
+          const config=JSON.parse(fs.readFileSync('transporte/firebase.functions.json','utf8'));
+          if (!rules.includes('allow get, list, create, update, delete: if transportAdmin();'))throw Error('Respostas abertas a clientes');
+          if (config.functions.codebase!=='verificado')throw Error('Codebase precisa ser isolada');
+          if (!code.includes("projectId:'presencasimplesyoka'"))throw Error('Cadastro oficial ausente');
+          if (!code.includes("collection('responses').doc(athleteId)"))throw Error('Deduplicação por atleta ausente');
+          JS
