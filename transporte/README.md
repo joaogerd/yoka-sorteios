@@ -1,3 +1,15 @@
+# Yoka Transporte — versão sem Blaze (Spark)
+
+> **Em homologação:** o fluxo protegido por nome completo, data de nascimento
+> e código individual utiliza agora o Google Apps Script já existente no
+> cadastro oficial do Yoka. A branch `feature/transporte-appsscript-spark`
+> ainda NÃO foi publicada. O site de produção continua preservado.
+>
+> **Instruções atualizadas:** [docs/DEPLOY_SPARK.md](docs/DEPLOY_SPARK.md).
+>
+> O guia histórico abaixo descreve o protótipo anterior. NÃO executar
+> o comando de deploy de Cloud Functions mencionado nele.
+
 # Yoka Transporte
 
 > **Novo fluxo em homologação:** esta branch contém a integração com o cadastro
