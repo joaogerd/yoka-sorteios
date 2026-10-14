@@ -1,0 +1,27 @@
+name: Validar Yoka Transporte Spark
+on:
+  push:
+    branches: [feature/transporte-appsscript-spark]
+    paths:
+      - 'transporte/**'
+      - '.github/workflows/transporte-spark.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Testes locais sem acesso a produção
+        run: cd transporte && npm run check
+      - name: Não usar Functions no projeto Spark
+        run: |
+          test ! -e transporte/firebase.functions.json
+          test ! -e transporte/functions/index.js
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const code=fs.readFileSync('transporte/public/firebase-data.js','utf8');
+          if(code.includes('httpsCallable')||code.includes('getFunctions'))throw Error('Cloud Functions ainda utilizada');
+          JS
