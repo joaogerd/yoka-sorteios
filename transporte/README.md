@@ -1,5 +1,12 @@
 # Yoka Transporte
 
+> **Novo fluxo em homologação:** esta branch contém a integração com o cadastro
+> oficial de atletas usando nome completo + nascimento + código individual.
+> As funções, regras e interface estão preparadas, porém **não estão publicadas**.
+> Antes do deploy leia [docs/CADASTRO_VERIFICADO.md](docs/CADASTRO_VERIFICADO.md).
+> O site em produção permanece com o fluxo antigo até a implantação controlada.
+> Os demais tópicos abaixo descrevem a versão atualmente publicada.
+>
 Aplicativo móvel/web para organizar transportes de jogos e competições do Yoka. Frontend estático no Firebase Hosting, Firestore como backend com regras próprias, Firebase Authentication (anônimo para responsáveis, Google para administradores).
 
 ## Funcionalidades
