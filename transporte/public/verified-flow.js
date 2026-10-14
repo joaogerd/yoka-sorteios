@@ -14,6 +14,9 @@ export function createVerifiedFlow({getTrip,onVerified,onCleared,reportError,not
     $('athletes').readOnly=false;
     $('category').disabled=false;
     gate.hidden=true;
+    issuedMessage='';
+    $('issued-code-box').hidden=true;
+    $('issued-code-message').textContent='';
   }
   function showGate() {
     clear();
