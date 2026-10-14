@@ -1,3 +1,8 @@
+> **DOCUMENTO HISTÓRICO:** este guia descreve a alternativa de Cloud Functions
+> que exigiria Blaze. Para a implementação adotada no plano Spark, leia
+> [DEPLOY_SPARK.md](DEPLOY_SPARK.md).
+> NÃO seguir as instruções de Functions ou de faturamento abaixo.
+
 # Yoka Transporte — cadastro verificado de atletas (implantação controlada)
 
 ## Situação
