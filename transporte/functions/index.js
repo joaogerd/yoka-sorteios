@@ -73,7 +73,7 @@ async function sessionAthlete(tripId,uid,athleteId) {
     sessionRef(tripId,uid,athleteId).get(),codeRef(tripId,athleteId).get()
   ]);
   if(!session.exists||!issued.exists||session.get('version')!==issued.get('version')
-     ||session.get('expiresAt')?.toMillis()<=Date.now()) return false;
+     ||!session.get('expiresAt')||session.get('expiresAt').toMillis()<=Date.now()) return false;
   return true;
 }
 async function attemptAllowance(uid) {
@@ -123,7 +123,8 @@ export const verifyTransportAthlete=onCall(caller(),async request=>{
   const sref=sessionRef(tripId,uid,athlete.id);
   await db.runTransaction(async tx=>{
     const doc=await tx.get(ref);
-    if(!doc.exists||doc.get('usedAt')||doc.get('expiresAt')?.toMillis()<=Date.now()
+    if(!doc.exists||doc.get('usedAt')||!doc.get('expiresAt')
+       ||doc.get('expiresAt').toMillis()<=Date.now()
        ||!codesEqual(doc.get('hash'),code))fail('permission-denied',VERIFICATION_ERROR);
     tx.update(ref,{usedAt:FieldValue.serverTimestamp()});
     tx.set(sref,{athleteId:athlete.id,version:doc.get('version'),
