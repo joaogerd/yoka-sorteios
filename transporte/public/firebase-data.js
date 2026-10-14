@@ -2,9 +2,9 @@ import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-
 import {getAuth, signInAnonymously, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
 import {getFirestore, collection, doc, addDoc, setDoc, updateDoc, getDoc, getDocs, onSnapshot, query, where, serverTimestamp, deleteDoc} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js';
 import {isConfiguredAdminEmail} from './admin-access.js';
-import {getFunctions, httpsCallable} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-functions.js';
+import {transportRpc} from './appsscript-bridge.js';
 
-let app, auth, db, functions;
+let app, auth, db;
 let currentUser;
 export async function initFirebase() {
   let config;
@@ -37,7 +37,7 @@ export async function initFirebase() {
   } catch (err) {
     console.warn('App Check nao foi inicializado; as regras do projeto podem exigir sua ativacao.',err);
   }
-  auth=getAuth(app);db=getFirestore(app);functions=getFunctions(app,'southamerica-east1');
+  auth=getAuth(app);db=getFirestore(app);
   await new Promise((resolve,reject)=>{let unsub=onAuthStateChanged(auth, user=>{unsub();currentUser=user;resolve(user);},reject);});
   if (!currentUser) await anonymousLogin();
   return currentUser;
@@ -66,9 +66,15 @@ export async function findAthleteById(id){ // Implementação reservada para int
   void id; return null;
 }
 
-// Acesso familiar autenticado no servidor. Nunca ler cadastro de atletas no browser.
-const callable=(name,data)=>httpsCallable(functions,name)(data).then(result=>result.data);
-export const issueTransportCode=data=>callable('issueTransportCode',data);
-export const verifyTransportAthlete=data=>callable('verifyTransportAthlete',data);
-export const restoreTransportAthlete=data=>callable('restoreTransportAthlete',data);
-export const submitTransportChoice=data=>callable('submitTransportChoice',data);
+// Backend gratuito: Apps Script valida o Firebase ID Token antes de acessar Firestore.
+// O código do cliente não obtém credenciais de service account nem lê o cadastro.
+async function transportCall(name,data) {
+  const user=auth?.currentUser;
+  if(!user)throw Error('Faça login novamente antes de continuar.');
+  const idToken=await user.getIdToken();
+  return transportRpc(name,data,idToken);
+}
+export const issueTransportCode=data=>transportCall('issueTransportCode',data);
+export const verifyTransportAthlete=data=>transportCall('verifyTransportAthlete',data);
+export const restoreTransportAthlete=data=>transportCall('restoreTransportAthlete',data);
+export const submitTransportChoice=data=>transportCall('submitTransportChoice',data);
