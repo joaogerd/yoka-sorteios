@@ -23,10 +23,10 @@
 - A ponte usa o token OAuth da conta que **executa** o Apps Script. O navegador
   autentica-se no Firebase transporte, encaminha Firebase ID token para o
   Apps Script, que valida identidade no Identity Toolkit e controla as operações.
-- O responsável informa nome completo, nascimento e código individual de uso único
-  enviado privadamente pela organização; a validação cria uma sessão vinculada ao
-  UID anônimo ou Google do Firebase transporte.
-- Administração pode gerar códigos e conferir acesso aos dois Firestores no
+- O responsável informa nome completo, nascimento e WhatsApp registrado de um dos responsáveis
+  no perfil privado Firestore. O cadastro só libera o formulário se os três
+  valores conferirem; não há envio nem geração de códigos individuais.
+- Administração pode conferir acesso aos dois Firestores no
   botão **Verificar conexão com o cadastro**.
 
 ## Passo único necessário para habilitar o backend
@@ -58,6 +58,23 @@ A URL utilizada permanece:
 
 https://script.google.com/macros/s/AKfycbwxEnjLwGJsnmCyEsNVRuibVTJDLQ8gR6VqkygoYsn482pVIyrxMuLhQlgyevDcjB3l/exec
 
+## Configuração obrigatória do Firebase Authentication para o preview
+
+O endereço temporário do canal de teste também deve constar nos **Domínios
+autorizados** do Firebase Authentication do projeto `yoka-transporte`:
+
+- Console: https://console.firebase.google.com/project/yoka-transporte/authentication/settings
+- Authentication > Configurações > Domínios autorizados > Adicionar domínio.
+- Adicionar **sem https://**:
+  `yoka-transporte--spark-verificado-flq3r1mo.web.app`
+
+O erro `auth/unauthorized-domain` aparece enquanto esta opção estiver
+pendente. O deploy automatizado do preview no GitHub não autoriza
+automaticamente domínios Firebase Authentication. O script de tentativa via
+conta de serviço do Hosting obteve HTTP 403 porque essa identidade não tem
+permissão para gerenciar Auth. **Não ampliamos automaticamente seu IAM.**
+O domínio oficial `yoka-transporte.web.app` deve continuar autorizado.
+
 ## IAM e testes de integração
 
 A conta `joao.gerd@gmail.com`, que executa o Apps Script, precisa
@@ -73,10 +90,10 @@ exemplo `roles/datastore.user` no projeto `yoka-transporte`, via
 https://console.cloud.google.com/iam-admin/iam?project=yoka-transporte.
 Evitar Owner/Editor amplos.
 
-Efetuar teste com um atleta de teste sem divulgar dados pessoais: gerar código,
+Efetuar teste com um atleta de teste sem divulgar dados pessoais: informar nome, nascimento e WhatsApp cadastrados,
 validar no navegador da família, confirmar ônibus e acompanhantes; tentar
 outra resposta para o mesmo atleta (deve atualizar, não duplicar). Conferir
-ausência, carro, encerramento de viagem, proteção contra código reutilizado e
+ausência, carro, encerramento de viagem, recusa de telefone incorreto e de atleta inexistente e
 o painel administrativo.
 
 ## Publicação do frontend oficial
@@ -107,3 +124,14 @@ obrigatória. O comando acima não atualiza regras.
 **Limitação:** o preview não comprova acesso entre os dois projetos;
 precisa do deploy Apps Script e da confirmação no botão de diagnóstico.
 Nenhum código de acesso de menor deve ir para grupos públicos.
+
+## Segurança sem códigos individuais
+
+A checagem de nome, data de nascimento e telefone cadastrado impede nomes
+inventados de passarem pelo fluxo comum, mas **não comprova a posse do
+telefone** (ao contrário de um OTP enviado ao próprio número). Os dados
+pessoais de menores exigem proteção e rate limiting. A confirmação fica
+vinculada ao ID do atleta e à sessão Firebase, e o backend exige o mesmo
+WhatsApp autorizado ao alterar a resposta. Caso o telefone cadastrado esteja
+desatualizado, a administração deve corrigir o perfil no cadastro oficial;
+não abrir um desvio de segurança que aceite telefone não registrado.
