@@ -78,3 +78,5 @@ export const issueTransportCode=data=>transportCall('issueTransportCode',data);
 export const verifyTransportAthlete=data=>transportCall('verifyTransportAthlete',data);
 export const restoreTransportAthlete=data=>transportCall('restoreTransportAthlete',data);
 export const submitTransportChoice=data=>transportCall('submitTransportChoice',data);
+
+export const checkTransportBackend=data=>transportCall('checkTransportBackend',data||{});
