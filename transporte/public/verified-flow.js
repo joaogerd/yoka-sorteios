@@ -1,4 +1,4 @@
-import {issueTransportCode,verifyTransportAthlete,restoreTransportAthlete,submitTransportChoice} from './firebase-data.js';
+import {issueTransportCode,verifyTransportAthlete,restoreTransportAthlete,submitTransportChoice,checkTransportBackend} from './firebase-data.js';
 
 // Fluxo familiar de duas etapas: identidade verificada antes de exibir formulário.
 // A chave de deduplicação é (viagemId, atletaId), controlada pela Cloud Function.
@@ -99,6 +99,18 @@ export function createVerifiedFlow({getTrip,onVerified,onCleared,reportError,not
   function bind() {
     gate.addEventListener('submit',verify);
     $('verify-another').addEventListener('click',()=>{showGate();notify('Informe os dados do próximo atleta.');});
+    $('diagnose-transport').addEventListener('click',async()=>{
+      const button=$('diagnose-transport');
+      button.disabled=true;
+      try {
+        const diag=await checkTransportBackend({});
+        const status=diag.ok?'Conexão com os dois Firestores confirmada.':
+          'Conexão pendente: cadastro HTTP '+(diag.cadastro?.status||'?')+
+          ', transporte HTTP '+(diag.transporte?.status||'?')+
+          '. Confira o IAM da conta que executa o Apps Script.';
+        notify(status,diag.ok);
+      } catch(error){reportError(error);}finally{button.disabled=false;}
+    });
     $('issue-code-form').addEventListener('submit',issueCode);
     $('copy-issued-code').addEventListener('click',async()=>{
       if(!issuedMessage)return;
