@@ -27,23 +27,23 @@
     [hidden]{display:none!important}
     @media(max-width:720px){.head-inner{padding:12px 16px;flex-wrap:wrap}main{padding:0 14px 40px}.hero{padding:30px 0}.panel{padding:18px}}
   </style>
-  <link rel="stylesheet" href="/styles.css?v=20261014-1"><link rel="icon" href="/yoka-logo.png"><link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css?v=20261015-3"><link rel="icon" href="/yoka-logo.png"><link rel="manifest" href="/manifest.webmanifest">
 </head>
 <body>
 <header class="site-head"><div class="head-inner"><a class="brand" href="/"><img src="yoka-logo.png" alt="Escudo Yoka" width="65" height="65"><span><b>YOKA <em>TRANSPORTE</em></b><small>GUARATINGUETÁ · FUTSAL</small></span></a><div class="head-controls"><span class="status"><span class="dot"></span><span id="connection">Conectando</span></span><button class="ghost" id="admin-button">Administração</button></div></div></header>
-<main>
+<main><section aria-label="Versão de homologação" class="notice" style="margin-top:20px;background:#173553;color:#eff6ff;border-color:#6485ae"><strong>VERSÃO DE TESTE — CADASTRO VERIFICADO</strong><p style="margin:7px 0 0">Esta versão exige nome completo, data de nascimento e código individual para confirmar o transporte. Não use para confirmações oficiais até a liberação pelo Yoka.</p></section>
   <section class="hero"><div class="eyebrow">YOKA · JUNTOS EM CADA VIAGEM</div><h1>A viagem também <span>faz parte do jogo.</span></h1><p>Confirme como sua família vai se deslocar. O Yoka organiza os lugares com mais transparência, segurança e praticidade.</p><a class="secondary legacy-link" href="/passageiros/">Cadastro de passageiros já existente ↗</a></section>
   <div id="notice" class="notice" hidden role="alert"></div>
   <nav class="tabs"><button class="tab selected" id="tab-family">Famílias</button><button class="tab" id="tab-admin" hidden>Painel administrativo</button></nav>
   <div id="family-view"><section class="panel"><div class="heading"><div class="step">01</div><div><h2>Selecione a viagem</h2><p>Escolha a atividade para a qual deseja confirmar seu transporte.</p></div></div><label for="trip-select">Viagens abertas e programadas</label><select id="trip-select"><option value="">Carregando viagens...</option></select><div class="trip-summary" id="trip-summary"><span>As viagens aparecerão aqui.</span></div></section>
     <section class="panel" id="family-panel" hidden><div class="heading"><div class="step">02</div><div><h2>Confirme sua participação</h2><p>Uma confirmação vinculada ao cadastro do atleta, com validação adicional.</p></div></div>
       <form id="verification-form">
-        <h3>Identificar atleta cadastrado</h3>
-        <p class="hint">Informe nome completo e data de nascimento, além do código individual entregue pela organização.</p>
+        <h3>Verificação obrigatória do cadastro oficial</h3>
+        <p class="hint">Informe nome completo, nascimento e WhatsApp já cadastrado para o responsável. Não é necessário código de acesso nem mensagem individual.</p>
         <div class="form-grid">
           <div><label for="athlete-full-name">Nome completo do atleta</label><input id="athlete-full-name" required maxlength="140"></div>
           <div><label for="athlete-birth-date">Data de nascimento</label><input type="date" id="athlete-birth-date" required></div>
-          <div class="full"><label for="athlete-access-code">Código de acesso</label><input id="athlete-access-code" required maxlength="24" autocomplete="off"></div>
+          <div class="full"><label for="athlete-contact-phone">WhatsApp cadastrado do responsável (com DDD)</label><input id="athlete-contact-phone" type="tel" inputmode="tel" required autocomplete="tel" placeholder="(12) 99999-9999" maxlength="20"></div>
         </div>
         <button class="primary wide" type="submit" id="verify-athlete">Confirmar identidade</button>
       </form>
@@ -56,24 +56,13 @@
     </section>
   </div>
   <div id="admin-view" hidden><section class="panel"><div class="admin-head"><div><span class="eyebrow">CONTROLE DE VIAGENS</span><h2>Painel de transporte</h2><p id="admin-greeting">Gerencie viagens, confirmações e distribuição dos lugares.</p></div><div class="head-tools"><button id="new-trip" class="secondary">+ Nova viagem</button><button id="admin-logout" class="ghost">Sair</button></div></div><div class="trip-picker"><label for="admin-trip-select">Viagem</label><select id="admin-trip-select"></select><button class="quiet" id="edit-trip">Editar viagem</button></div><section class="code-admin-panel">
-    <h3>Autorizar atleta para a viagem</h3>
-    <p class="hint">O código é individual, válido por 72 horas e deve ser enviado em particular ao responsável cadastrado.</p>
-    <form id="issue-code-form">
-      <div class="form-grid">
-        <div><label for="admin-athlete-name">Nome completo do atleta</label><input id="admin-athlete-name" required maxlength="140"></div>
-        <div><label for="admin-athlete-birth">Data de nascimento</label><input id="admin-athlete-birth" type="date" required></div>
-      </div>
-      <button class="secondary" type="submit" id="issue-code-button">Gerar código</button>
-    </form>
-    <div id="issued-code-box" class="trip-summary" hidden>
-      <strong>Envie apenas ao contato cadastrado:</strong>
-      <pre id="issued-code-message"></pre>
-      <button class="ghost" type="button" id="copy-issued-code">Copiar mensagem</button>
-    </div>
+    <h3>Conexão com o Cadastro Yoka</h3>
+    <p class="hint">As famílias identificam o atleta usando nome, nascimento e WhatsApp já cadastrado. Não é necessário enviar códigos individualmente.</p>
+    <button type="button" class="ghost" id="diagnose-transport">Verificar conexão com o cadastro</button>
   </section>
   <div class="metrics" id="metrics"></div><div id="plan" class="plan"></div><div class="admin-actions"><button id="export-csv" class="secondary">Exportar lista CSV</button><button id="print-list" class="secondary">Imprimir lista</button><button id="copy-link" class="ghost">Copiar link para famílias</button></div><h3 class="subheading">Confirmações recebidas</h3><div class="table-scroll"><table><thead><tr><th>Responsável e atletas</th><th>Categoria</th><th>Transporte</th><th>Pessoas</th><th>Veículo definido</th><th>Admin.</th></tr></thead><tbody id="responses-table"></tbody></table></div></section></div>
 </main>
 <div class="modal-wrap" id="trip-modal" hidden><div class="modal-backdrop" id="modal-backdrop"></div><section class="modal panel" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-head"><h2 id="modal-title">Nova viagem</h2><button id="close-modal" class="close" type="button">×</button></div><form id="trip-form"><input type="hidden" id="editing-id"><div class="form-grid"><div class="full"><label for="trip-title">Nome da atividade</label><input id="trip-title" maxlength="160" required placeholder="Ex.: Torneio Sub-09 em São José dos Campos"></div><div><label for="trip-date">Data</label><input id="trip-date" type="date" required></div><div><label for="trip-time">Horário de saída</label><input id="trip-time" type="time" required></div><div><label for="trip-origin">Local de saída</label><input id="trip-origin" maxlength="160" placeholder="Ex.: Ginásio do Pedregulho"></div><div><label for="trip-destination">Destino</label><input id="trip-destination" maxlength="160" required placeholder="Cidade / Ginásio"></div><div class="full"><label for="trip-notes">Orientações às famílias</label><textarea id="trip-notes" rows="2" maxlength="500" placeholder="Ponto de encontro, itens para levar..."></textarea></div></div>
 <div class="fleet-head"><div><h3>Veículos disponíveis</h3><p class="hint">Marque somente veículos realmente disponíveis para esta viagem. Adicione quantos precisar.</p></div><button type="button" id="add-vehicle" class="secondary">+ Adicionar veículo</button></div><div id="fleet-editor" class="fleet-editor"></div><div class="form-grid flags"><label class="toggle"><input id="trip-published" type="checkbox" checked>Publicar para as famílias</label><label class="toggle"><input id="trip-open" type="checkbox" checked>Aceitar confirmações</label></div><div class="modal-actions"><button id="cancel-modal" class="ghost" type="button">Cancelar</button><button id="save-trip" class="primary" type="submit">Salvar viagem</button></div></form></section></div>
-<footer><span>YOKA TRANSPORTE</span><span>Juntos pelo esporte.</span></footer><script type="module" src="/app.js?v=20261014-1"></script>
+<footer><span>YOKA TRANSPORTE</span><span>Juntos pelo esporte.</span></footer><script type="module" src="/app.js?v=20261015-3"></script>
 </body></html>

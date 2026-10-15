@@ -141,7 +141,7 @@ service cloud.firestore {
       allow create, update, delete: if transportAdmin();
       match /responses/{athleteId} {
         // A leitura e a escrita das respostas familiares é mediada exclusivamente
-        // pelas Cloud Functions (Admin SDK). O usuário anônimo não pode forjar ID.
+        // pelo Apps Script autorizado por IAM e regras administrativas. O cliente anônimo não pode forjar ID.
         allow get, list, create, update, delete: if transportAdmin();
       }
     }
