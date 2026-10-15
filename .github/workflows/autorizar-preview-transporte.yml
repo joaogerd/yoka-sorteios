@@ -1,0 +1,49 @@
+name: Autorizar dominio preview Yoka Transporte
+on:
+  push:
+    branches: [feature/transporte-appsscript-spark]
+    paths: ['.github/workflows/autorizar-preview-transporte.yml']
+permissions:
+  contents: read
+jobs:
+  auth-domain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Credencial limitada do projeto Yoka Transporte
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_YOKA_TRANSPORTE }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/cloud-platform
+      - name: Adicionar APENAS dominio de preview, preservando outros dominios
+        env:
+          GCP_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          node --input-type=module <<'JS'
+          const project='yoka-transporte';
+          const domain='yoka-transporte--spark-verificado-flq3r1mo.web.app';
+          const endpoint='https://identitytoolkit.googleapis.com/admin/v2/projects/'+project+'/config';
+          const token=process.env.GCP_ACCESS_TOKEN;
+          if(!token)throw Error('Credencial ausente');
+          const headers={'Authorization':'Bearer '+token,'Content-Type':'application/json'};
+          const current=await fetch(endpoint,{headers});
+          if(!current.ok)throw Error('Leitura da configuração Auth falhou HTTP '+current.status+
+            '. Conceda firebaseauth.configs.get à service account.');
+          const cfg=await current.json();
+          const original=cfg.authorizedDomains;
+          if(!Array.isArray(original)||!original.length)throw Error('Lista atual de domínios ausente; não modificar.');
+          if(original.includes(domain)){
+            console.log('Dominio de preview ja autorizado. Nenhuma mudanca.');
+            process.exit(0);
+          }
+          const names=[...new Set([...original,domain])];
+          const result=await fetch(endpoint+'?updateMask=authorizedDomains',{
+            method:'PATCH',headers,body:JSON.stringify({authorizedDomains:names})
+          });
+          if(!result.ok)throw Error('Firebase Auth recusou inclusão HTTP '+result.status+
+            '. A service account precisa firebaseauth.configs.update.');
+          const updated=await result.json();
+          if(!updated.authorizedDomains?.includes(domain))throw Error('A inclusão não foi confirmada.');
+          console.log('Domínio de preview habilitado sem remover outros domínios.');
+          JS
