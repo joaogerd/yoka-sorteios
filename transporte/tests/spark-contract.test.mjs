@@ -26,7 +26,10 @@ test('acesso à família depende de confirmação do atleta',()=>{
  assert.match(html,/id="verification-form"/);
  assert.match(html,/id="response-form" hidden/);
  assert.match(flow,/verifyTransportAthlete/);
- assert.match(flow,/issueTransportCode/);
+ assert.match(html,/athlete-contact-phone/);
+ assert.doesNotMatch(html,/id="athlete-access-code"/);
+ assert.match(flow,/guardianPhone/);
+ assert.doesNotMatch(flow,/issueTransportCode/);
  assert.match(flow,/restoreTransportAthlete/);
 });
 test('regras do Firestore bloqueiam escrita anônima nos documentos dos atletas',()=>{
