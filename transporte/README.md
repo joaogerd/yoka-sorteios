@@ -1,19 +1,19 @@
 # Yoka Transporte — versão sem Blaze (Spark)
 
 > **Em homologação:** o fluxo protegido por nome completo, data de nascimento
-> e código individual utiliza agora o Google Apps Script já existente no
+> e WhatsApp do responsável cadastrado utiliza agora o Google Apps Script já existente no
 > cadastro oficial do Yoka. A branch `feature/transporte-appsscript-spark`
 > ainda NÃO foi publicada. O site de produção continua preservado.
 >
 > **Instruções atualizadas:** [docs/DEPLOY_SPARK.md](docs/DEPLOY_SPARK.md).
 >
-> O guia histórico abaixo descreve o protótipo anterior. NÃO executar
+> O guia histórico abaixo descreve o protótipo anterior (com códigos). NÃO executar
 > o comando de deploy de Cloud Functions mencionado nele.
 
 # Yoka Transporte
 
 > **Novo fluxo em homologação:** esta branch contém a integração com o cadastro
-> oficial de atletas usando nome completo + nascimento + código individual.
+> oficial de atletas usando nome completo + nascimento + telefone registrado.
 > As funções, regras e interface estão preparadas, porém **não estão publicadas**.
 > Antes do deploy leia [docs/CADASTRO_VERIFICADO.md](docs/CADASTRO_VERIFICADO.md).
 > O site em produção permanece com o fluxo antigo até a implantação controlada.
