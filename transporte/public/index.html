@@ -27,7 +27,7 @@
     [hidden]{display:none!important}
     @media(max-width:720px){.head-inner{padding:12px 16px;flex-wrap:wrap}main{padding:0 14px 40px}.hero{padding:30px 0}.panel{padding:18px}}
   </style>
-  <link rel="stylesheet" href="/styles.css?v=20261014-1"><link rel="icon" href="/yoka-logo.png"><link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css?v=20261015-1"><link rel="icon" href="/yoka-logo.png"><link rel="manifest" href="/manifest.webmanifest">
 </head>
 <body>
 <header class="site-head"><div class="head-inner"><a class="brand" href="/"><img src="yoka-logo.png" alt="Escudo Yoka" width="65" height="65"><span><b>YOKA <em>TRANSPORTE</em></b><small>GUARATINGUETÁ · FUTSAL</small></span></a><div class="head-controls"><span class="status"><span class="dot"></span><span id="connection">Conectando</span></span><button class="ghost" id="admin-button">Administração</button></div></div></header>
@@ -57,6 +57,7 @@
   </div>
   <div id="admin-view" hidden><section class="panel"><div class="admin-head"><div><span class="eyebrow">CONTROLE DE VIAGENS</span><h2>Painel de transporte</h2><p id="admin-greeting">Gerencie viagens, confirmações e distribuição dos lugares.</p></div><div class="head-tools"><button id="new-trip" class="secondary">+ Nova viagem</button><button id="admin-logout" class="ghost">Sair</button></div></div><div class="trip-picker"><label for="admin-trip-select">Viagem</label><select id="admin-trip-select"></select><button class="quiet" id="edit-trip">Editar viagem</button></div><section class="code-admin-panel">
     <h3>Autorizar atleta para a viagem</h3>
+    <button type="button" class="ghost" id="diagnose-transport">Verificar conexão com o cadastro</button>
     <p class="hint">O código é individual, válido por 72 horas e deve ser enviado em particular ao responsável cadastrado.</p>
     <form id="issue-code-form">
       <div class="form-grid">
@@ -75,5 +76,5 @@
 </main>
 <div class="modal-wrap" id="trip-modal" hidden><div class="modal-backdrop" id="modal-backdrop"></div><section class="modal panel" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-head"><h2 id="modal-title">Nova viagem</h2><button id="close-modal" class="close" type="button">×</button></div><form id="trip-form"><input type="hidden" id="editing-id"><div class="form-grid"><div class="full"><label for="trip-title">Nome da atividade</label><input id="trip-title" maxlength="160" required placeholder="Ex.: Torneio Sub-09 em São José dos Campos"></div><div><label for="trip-date">Data</label><input id="trip-date" type="date" required></div><div><label for="trip-time">Horário de saída</label><input id="trip-time" type="time" required></div><div><label for="trip-origin">Local de saída</label><input id="trip-origin" maxlength="160" placeholder="Ex.: Ginásio do Pedregulho"></div><div><label for="trip-destination">Destino</label><input id="trip-destination" maxlength="160" required placeholder="Cidade / Ginásio"></div><div class="full"><label for="trip-notes">Orientações às famílias</label><textarea id="trip-notes" rows="2" maxlength="500" placeholder="Ponto de encontro, itens para levar..."></textarea></div></div>
 <div class="fleet-head"><div><h3>Veículos disponíveis</h3><p class="hint">Marque somente veículos realmente disponíveis para esta viagem. Adicione quantos precisar.</p></div><button type="button" id="add-vehicle" class="secondary">+ Adicionar veículo</button></div><div id="fleet-editor" class="fleet-editor"></div><div class="form-grid flags"><label class="toggle"><input id="trip-published" type="checkbox" checked>Publicar para as famílias</label><label class="toggle"><input id="trip-open" type="checkbox" checked>Aceitar confirmações</label></div><div class="modal-actions"><button id="cancel-modal" class="ghost" type="button">Cancelar</button><button id="save-trip" class="primary" type="submit">Salvar viagem</button></div></form></section></div>
-<footer><span>YOKA TRANSPORTE</span><span>Juntos pelo esporte.</span></footer><script type="module" src="/app.js?v=20261014-1"></script>
+<footer><span>YOKA TRANSPORTE</span><span>Juntos pelo esporte.</span></footer><script type="module" src="/app.js?v=20261015-1"></script>
 </body></html>
